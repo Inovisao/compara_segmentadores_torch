@@ -1,0 +1,18 @@
+from config import ALL_CLASSES
+
+DATA_HYPERPARAMETERS = {
+    "IN_CHANNELS": 5,
+    "IMAGE_SIZE": 512,
+    "BATCH_SIZE": 4,
+    "NUM_CLASSES": len(ALL_CLASSES),
+    #"USE_DATA_AUGMENTATION": True,
+}
+
+
+DATA_AUGMENTATION = {
+    "HORIZONTAL_FLIP": 0.5,
+    "BRIGHTNESS_CONTRAST": 0.2,
+    "SUN_FLARE": 0.2,
+    "RANDOM_FOG": 0.2, #Efeito de neblina
+    "ROTATION": 25,
+}
