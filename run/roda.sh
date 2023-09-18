@@ -8,7 +8,7 @@ mkdir -p ../results/history
 
 # OPTIMIZADORES
 #opt=(adam sgd adagrad lion sam)
-opt=(adagrad) #mudar depois
+opt=(adam) #mudar depois
 
 # LEARNING RATES
 learning_rates=(0.001)

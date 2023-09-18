@@ -5,6 +5,8 @@ import argparse
 from data_manager import get_images, get_dataset, get_data_loaders
 from engine import train, validate
 from config import ALL_CLASSES, LABEL_COLORS_LIST
+from data_hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
+from arch_optim import get_optimizer,get_architecture
 from helper_functions import save_model, SaveBestModel, save_plots, SaveBestModelIOU
 from torch.optim.lr_scheduler import MultiStepLR
 from architectures import *
@@ -21,16 +23,16 @@ def get_args():
     arg_parser = argparse.ArgumentParser()
 
     # Parse the architecture.
-    arg_parser.add_argument("-a", "--architecture", required=True, default=None, type=str)
+    arg_parser.add_argument("-a", "--architecture", required=True, default='deeplabv3_resnet101', type=str)
     
     # Parse the optimizer.
-    arg_parser.add_argument("-o", "--optimizer", required=True, default=None, type=str)
+    arg_parser.add_argument("-o", "--optimizer", required=True, default='SGD', type=str)
 
     # Parse the number of the run.
-    arg_parser.add_argument("-r", "--run", required=True, default=None, type=int)
+    arg_parser.add_argument("-r", "--run", required=True, default=1, type=int)
     
     # Parse the learning rate.
-    arg_parser.add_argument("-l", "--learning_rate", required=True, default=None, type=float)
+    arg_parser.add_argument("-l", "--learning_rate", required=True, default=0.001, type=float)
 
     # Parse the arguments and return them as a dictionary.
     return vars(arg_parser.parse_args())
@@ -44,10 +46,30 @@ if __name__ == '__main__':
     out_dir_valid_preds = os.path.join('..', 'outputs', 'valid_preds')
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
-
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = get_architecture(args["architecture"])(num_classes=len(ALL_CLASSES)).to(device)
+    model = get_architecture(args["architecture"], 
+                             in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], 
+                             out_classes=DATA_HYPERPARAMETERS["NUM_CLASSES"], 
+                             pretrained=MODEL_HYPERPARAMETERS["USE_TRANSFER_LEARNING"])
+
+    
+    model = model.to(device)
+
+
+    print("===================================")
+    print("==> MODEL")
     print(model)
+    print("===================================")
+    print("==> MODEL HYPERPARAMETERS")
+    print(MODEL_HYPERPARAMETERS)
+    print("===================================")
+    print("==> DATA HYPERPARAMETERS")
+    print(DATA_HYPERPARAMETERS)
+    print("===================================")
+    print("==> DATA AUGMENTATION")
+    print(DATA_AUGMENTATION)
+    print("===================================")
+
     # Total parameters and trainable parameters.
     total_params = sum(p.numel() for p in model.parameters())
     print(f"{total_params:,} total parameters.")
@@ -55,7 +77,8 @@ if __name__ == '__main__':
         p.numel() for p in model.parameters() if p.requires_grad)
     print(f"{total_trainable_params:,} training parameters.")
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    #optimizer = torch.optim.SGD(model.parameters(), lr=args['learning_rate'])
+    optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args['learning_rate'])
     criterion = nn.CrossEntropyLoss()
 
     train_images, train_masks, valid_images, valid_masks = get_images(
@@ -72,22 +95,23 @@ if __name__ == '__main__':
         ALL_CLASSES,
         classes_to_train,
         LABEL_COLORS_LIST,
-        img_size=imgsz,
+        img_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
     )
 
     train_dataloader, valid_dataloader = get_data_loaders(
-        train_dataset, valid_dataset, batch_size=batch
+        train_dataset, valid_dataset, batch_size=DATA_HYPERPARAMETERS['BATCH_SIZE']
     )
 
     # Initialize `SaveBestModel` class.
     save_best_model = SaveBestModel()
     save_best_iou = SaveBestModelIOU()
+
     # LR Scheduler.
     scheduler = MultiStepLR(
         optimizer, milestones=[60], gamma=0.1, verbose=True
     )
 
-    EPOCHS = epochs
+    EPOCHS = MODEL_HYPERPARAMETERS["EPOCHS"]
     train_loss, train_pix_acc, train_miou = [], [], []
     valid_loss, valid_pix_acc, valid_miou = [], [], []
     for epoch in range (EPOCHS):
