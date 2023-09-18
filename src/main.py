@@ -1,34 +1,44 @@
 import torch
 import torch.nn as nn
 import os
-
+import argparse
 from data_manager import get_images, get_dataset, get_data_loaders
 from engine import train, validate
 from config import ALL_CLASSES, LABEL_COLORS_LIST
 from helper_functions import save_model, SaveBestModel, save_plots, SaveBestModelIOU
 from torch.optim.lr_scheduler import MultiStepLR
-from architectures import resnet101
+from architectures import *
 
-seed = 42
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = True
 
-# Valores padrão caso não seja passado pelo script
-epochs = 5  
-lr = 0.001  
-batch = 4  
-imgsz = 512 
-scheduler = False  
+def get_args():
+    """
+    This function gets the arguments of the program, that is, the architecture, the optimizer and the learning rate.
 
-print(f"Epochs: {epochs}")
-print(f"Learning Rate: {lr}")
-print(f"Batch Size: {batch}")
-print(f"Image Size: {imgsz}")
-print(f"Scheduler: {scheduler}")
+    Returns: a dictionary with the values of the arguments, in which the keys are the names defined for each argument in the second argument of each of the functions below.
+    """
+
+    # Instantiate the argument parser.
+    arg_parser = argparse.ArgumentParser()
+
+    # Parse the architecture.
+    arg_parser.add_argument("-a", "--architecture", required=True, default=None, type=str)
+    
+    # Parse the optimizer.
+    arg_parser.add_argument("-o", "--optimizer", required=True, default=None, type=str)
+
+    # Parse the number of the run.
+    arg_parser.add_argument("-r", "--run", required=True, default=None, type=int)
+    
+    # Parse the learning rate.
+    arg_parser.add_argument("-l", "--learning_rate", required=True, default=None, type=float)
+
+    # Parse the arguments and return them as a dictionary.
+    return vars(arg_parser.parse_args())
+
+
 
 if __name__ == '__main__':
+    args = get_args()
     # Create a directory with the model name for outputs.
     out_dir = os.path.join('..', 'outputs')
     out_dir_valid_preds = os.path.join('..', 'outputs', 'valid_preds')
@@ -36,7 +46,7 @@ if __name__ == '__main__':
     os.makedirs(out_dir_valid_preds, exist_ok=True)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = resnet101(num_classes=len(ALL_CLASSES)).to(device)
+    model = get_architecture(args["architecture"])(num_classes=len(ALL_CLASSES)).to(device)
     print(model)
     # Total parameters and trainable parameters.
     total_params = sum(p.numel() for p in model.parameters())
