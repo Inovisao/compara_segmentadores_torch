@@ -19,9 +19,9 @@ do
 done
 
 # Nomes das pastas onde ficarão os resultados para cada dobra
-pastaDobrasImagens="../data/dobras"
-pastaTreino="../data/train"
-pastaTeste="../data/test"
+pastaDobrasImagens="../input/dobras"
+pastaTreino="../input/train"
+pastaTeste="../input/test"
 pastaResultados="../results"
 pastaDobrasResultados="../resultsNfolds"
 
