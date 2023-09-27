@@ -65,7 +65,7 @@ def validate(
 ):
     print('Validating')
     model.eval()
-    valid_running_loss = 0
+    valid_running_loss = 0.0
     # Calculate the number of batches.
     num_batches = len(valid_dataloader)
     num_classes = len(classes_to_train)
@@ -73,7 +73,7 @@ def validate(
 
     with torch.no_grad():
         prog_bar = tqdm(valid_dataloader, total=num_batches, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}')
-        counter = 0 # To keep track of batch counter.
+        counter = 0.0 # To keep track of batch counter.
         for i, data in enumerate(prog_bar):
             counter += 1
             data, target = data[0].to(device), data[1].to(device)
