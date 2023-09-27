@@ -10,14 +10,13 @@ from data_hyperparameters import DATA_AUGMENTATION, DATA_HYPERPARAMETERS
 
 def get_images(root_path):
     print(root_path)
-    input()
-    train_images = glob.glob(f"{root_path}/images/train/*")
+    train_images = glob.glob(f"{root_path}/train/imagens/*")
     train_images.sort()
-    train_masks = glob.glob(f"{root_path}/labels/train/*")
+    train_masks = glob.glob(f"{root_path}/labels/*")
     train_masks.sort()
-    valid_images = glob.glob(f"{root_path}/images/val/*")
+    valid_images = glob.glob(f"{root_path}/test/imagens/*")
     valid_images.sort()
-    valid_masks = glob.glob(f"{root_path}/labels/val/*")
+    valid_masks = glob.glob(f"{root_path}/labels/*")
     valid_masks.sort()
 
     return train_images, train_masks, valid_images, valid_masks
