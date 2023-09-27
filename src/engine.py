@@ -73,7 +73,7 @@ def validate(
 
     with torch.no_grad():
         prog_bar = tqdm(valid_dataloader, total=num_batches, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}')
-        counter = 0.0 # To keep track of batch counter.
+        counter = 0 # To keep track of batch counter.
         for i, data in enumerate(prog_bar):
             counter += 1
             data, target = data[0].to(device), data[1].to(device)
