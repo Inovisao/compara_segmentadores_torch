@@ -82,7 +82,7 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     train_images, train_masks, valid_images, valid_masks = get_images(
-        root_path='../input/split_data'    
+        root_path='../data/'    
     )
 
     classes_to_train = ALL_CLASSES
