@@ -24,6 +24,10 @@ def train(
     num_classes = len(classes_to_train)
     iou_eval = IOUEval(num_classes)
 
+    #print("DATASET", train_dataloader.dataset[0])
+    #for i in prog_bar:
+    #    print(i)   
+
     for i, data in enumerate(prog_bar):
         counter += 1
         data, target = data[0].to(device), data[1].to(device)
@@ -44,6 +48,7 @@ def train(
         
     ##### PER EPOCH LOSS #####
     train_loss = train_running_loss / counter
+
     ##########################
     overall_acc, per_class_acc, per_class_iu, mIOU = iou_eval.getMetric()
     return train_loss, overall_acc, mIOU
@@ -60,7 +65,7 @@ def validate(
 ):
     print('Validating')
     model.eval()
-    valid_running_loss = 0.0
+    valid_running_loss = 0
     # Calculate the number of batches.
     num_batches = len(valid_dataloader)
     num_classes = len(classes_to_train)
@@ -93,7 +98,7 @@ def validate(
 
             iou_eval.addBatch(outputs.max(1)[1].data, target.data)
         
-    ##### PER EPOCH LOSS #####
+        ##### PER EPOCH LOSS #####
     valid_loss = valid_running_loss / counter
     ##########################
     overall_acc, per_class_acc, per_class_iu, mIOU = iou_eval.getMetric()

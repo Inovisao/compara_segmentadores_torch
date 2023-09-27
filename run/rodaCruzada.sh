@@ -19,9 +19,9 @@ do
 done
 
 # Nomes das pastas onde ficarão os resultados para cada dobra
-pastaDobrasImagens="../input/dobras"
-pastaTreino="../input/train"
-pastaTeste="../input/test"
+pastaDobrasImagens="../data/dobras"
+pastaTreino="../data/train"
+pastaTeste="../data/test"
 pastaResultados="../results"
 pastaDobrasResultados="../resultsNfolds"
 
@@ -78,7 +78,7 @@ done
 
 cd ../src
 #Rscript ./graphics.R # O programa não está mais usando o R, pelo menos por enquanto
-python analyse_results.py
+#python analyse_results.py
 cd ../run
  
 

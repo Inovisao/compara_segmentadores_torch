@@ -25,9 +25,9 @@ Help() {
 
 echo "[SCRIPT SPLIT DATA IN N FOLDS] Initializing..."
 
-dir_all="../input/all"
-dir_train="../input/train"
-dir_dobras="../input/dobras/"
+dir_all="../data/all"
+dir_train="../data/train"
+dir_dobras="../data/dobras/"
 subset=0
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais
 # rapidamente um exemplo.
