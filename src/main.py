@@ -47,7 +47,7 @@ if __name__ == '__main__':
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = get_architecture(args["architecture"], 
+    model = architectures()[args ["architecture"]]( 
                              in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], 
                              out_classes=DATA_HYPERPARAMETERS["NUM_CLASSES"], 
                              pretrained=MODEL_HYPERPARAMETERS["USE_TRANSFER_LEARNING"])
