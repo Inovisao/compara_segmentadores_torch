@@ -2,16 +2,15 @@
 
 ##  Novas implementações:
     Redes novas
-    Script para separar as imagens e as labels
+    Script para separar as imagens por dobras
     Script para rodar o código
-    ...
-    (IDEIAS FUTURAS -> NOVOS OTIMIZADORES, NOVAS MÉTRICAS)
+
 
 ## Organizando os dados:
-    - Coloque as imagens dentro de input/imagens e as labels em input/labels (ambos em formato png)
-    - Rode o script split.sh presente na pasta utils para separar as imagens de treino e validação
+    - Coloque as imagens dentro de data/all/imagens e as labels em data/labels (ambos em formato png)
+    - Rode o script split.sh presente na pasta utils para separar as imagens por dobras
 
-## Instalação:
+## Preparando o ambiente:
     - Abra o terminal e rode essa linha: conda create -n segmentacao
     - Logo após, rode essa linha: conda activate segmentacao
     - Rode o script env.sh dentro de utils para preparar o ambiente com as bibliotecas
