@@ -119,7 +119,7 @@ class SaveBestModelIOU:
     def __init__(self, best_iou=float(0)):
         self.best_iou = best_iou
         
-    def __call__(self, current_iou, epoch, model, out_dir, name='model'):
+    def __call__(self, current_iou, epoch, model, out_dir_checkpoints, name='model'):
         if current_iou > self.best_iou:
             self.best_iou = current_iou
             print(f"\nBest validation IoU: {self.best_iou}")
@@ -127,9 +127,9 @@ class SaveBestModelIOU:
             torch.save({
                 'epoch': epoch+1,
                 'model_state_dict': model.state_dict(),
-                }, os.path.join(out_dir, 'best_'+name+'.pth'))
+                }, os.path.join(out_dir_checkpoints, 'best_'+name+'.pth'))
 
-def save_model(epochs, model, optimizer, criterion, out_dir, name='model'):
+def save_model(epochs, model, optimizer, criterion, out_dir_checkpoints, name='model'):
     """
     Function to save the trained model to disk.
     """
@@ -138,13 +138,13 @@ def save_model(epochs, model, optimizer, criterion, out_dir, name='model'):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
-                }, os.path.join(out_dir, name+'.pth'))
+                }, os.path.join(out_dir_checkpoints, name+'.pth'))
 
 def save_plots(
     train_acc, valid_acc, 
     train_loss, valid_loss, 
     train_miou, valid_miou, 
-    out_dir
+    out_dir_results
 ):
     """
     Function to save the loss and accuracy plots to disk.
@@ -162,7 +162,7 @@ def save_plots(
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.savefig(os.path.join(out_dir, 'accuracy.png'))
+    plt.savefig(os.path.join(out_dir_results, 'accuracy.png'))
     
     # Loss plots.
     plt.figure(figsize=(10, 7))
@@ -177,7 +177,7 @@ def save_plots(
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(os.path.join(out_dir, 'loss.png'))
+    plt.savefig(os.path.join(out_dir_results, 'loss.png'))
 
     # mIOU plots.
     plt.figure(figsize=(10, 7))
@@ -192,7 +192,7 @@ def save_plots(
     plt.xlabel('Epochs')
     plt.ylabel('mIoU')
     plt.legend()
-    plt.savefig(os.path.join(out_dir, 'miou.png'))
+    plt.savefig(os.path.join(out_dir_results, 'miou.png'))
 
 def get_segment_labels(image, model, device):
     image = image.unsqueeze(0).to(device) # add a batch dimension
@@ -228,3 +228,44 @@ def image_overlay(image, segmented_image):
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     cv2.addWeighted(image, alpha, segmented_image, beta, gamma, image)
     return image
+
+def save_validation_images(data, outputs, epoch, i, save_dir, label_colors_list):
+    """
+    Salva as imagens de validação com as máscaras de segmentação em uma pasta específica.
+
+    Args:
+        data (torch.Tensor): Imagens de entrada.
+        outputs (torch.Tensor): Saídas do modelo (segmentações).
+        epoch (int): Número da época atual.
+        i (int): Índice da iteração.
+        save_dir (str): Diretório raiz para salvar as imagens.
+        label_colors_list (list): Lista de cores para cada classe de segmentação.
+    """
+    # Crie um diretório para a época atual, se ainda não existir
+    epoch_dir = os.path.join(save_dir, "epocas", f"epoch_{epoch}")
+    os.makedirs(epoch_dir, exist_ok=True)
+
+    for batch_idx in range(data.size(0)):
+        seg_map = outputs[batch_idx]
+        seg_map = torch.argmax(seg_map.squeeze(), dim=0).cpu().numpy()
+
+        image = data[batch_idx].cpu().numpy()
+        image = np.transpose(image, (1, 2, 0))
+        image = (image * 255).astype(np.uint8)
+
+        colored_seg_map = np.zeros((seg_map.shape[0], seg_map.shape[1], 3), dtype=np.uint8)
+
+        for label_num in range(len(label_colors_list)):
+            index = seg_map == label_num
+            colored_seg_map[index] = label_colors_list[label_num]
+
+        # Combine a imagem original com a máscara colorida
+        alpha = 0.5  # Ajuste a transparência conforme necessário
+        overlaid_image = cv2.addWeighted(image, 1 - alpha, colored_seg_map, alpha, 0)
+
+        # Salve a imagem
+        image_filename = f"predicted_{epoch}_{i}_batch_{batch_idx}.png"
+        image_path = os.path.join(epoch_dir, image_filename)
+        cv2.imwrite(image_path, overlaid_image)
+
+        print(f"Imagem salva em: {image_path}")
