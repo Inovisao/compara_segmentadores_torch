@@ -14,3 +14,8 @@
     - Abra o terminal e rode essa linha: conda create -n segmentacao
     - Logo após, rode essa linha: conda activate segmentacao
     - Rode o script env.sh dentro de utils para preparar o ambiente com as bibliotecas
+
+## Rodando um experimento:
+    - Ajuste os hiperparâmetros em src/data_hyperparameters.py
+    - Após organizar os dados e preparar o ambiente, abra o arquivo roda.sh na pasta RUN e escolha as arquiteturas e otimizadores
+    - Abra o terminal e execute o rodaCruzada.sh passando como argumento o número de dobras. (Exemplo: ./rodaCruzada.sh -k 5)
