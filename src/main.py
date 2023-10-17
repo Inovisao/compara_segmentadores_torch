@@ -44,6 +44,7 @@ if __name__ == '__main__':
     # Create a directory with the model name for outputs.
     out_dir = os.path.join('..', 'outputs')
     out_dir_valid_preds = os.path.join('..', 'outputs', 'valid_preds')
+    out_dir_checkpoints = os.path.join('..','model_checkpoints')
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -142,10 +143,10 @@ if __name__ == '__main__':
         valid_miou.append(valid_epoch_miou)
 
         save_best_model(
-            valid_epoch_loss, epoch, model, out_dir, name='model_loss'
+            valid_epoch_loss, epoch, model, out_dir_checkpoints, name='model_loss'
         )
         save_best_iou(
-            valid_epoch_miou, epoch, model, out_dir, name='model_iou'
+            valid_epoch_miou, epoch, model, out_dir_checkpoints, name='model_iou'
         )
 
         print(
@@ -162,7 +163,7 @@ if __name__ == '__main__':
             scheduler.step()
         print('-' * 50)
 
-    save_model(EPOCHS, model, optimizer, criterion, out_dir, name='model')
+    save_model(EPOCHS, model, optimizer, criterion, out_dir_checkpoints, name='model')
     # Save the loss and accuracy plots.
     save_plots(
         train_pix_acc, valid_pix_acc, 
