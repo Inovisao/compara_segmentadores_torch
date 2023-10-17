@@ -65,7 +65,7 @@ def validate(
 ):
     print('Validating')
     model.eval()
-    valid_running_loss = 0.0
+    valid_running_loss = 0
     # Calculate the number of batches.
     num_batches = len(valid_dataloader)
     num_classes = len(classes_to_train)
