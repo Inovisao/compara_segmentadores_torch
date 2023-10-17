@@ -26,7 +26,7 @@ def get_args():
     arg_parser.add_argument("-a", "--architecture", required=True, default='deeplabv3_resnet101', type=str)
     
     # Parse the optimizer.
-    arg_parser.add_argument("-o", "--optimizer", required=True, default='SGD', type=str)
+    arg_parser.add_argument("-o", "--optimizer", required=True, default='adam', type=str)
 
     # Parse the number of the run.
     arg_parser.add_argument("-r", "--run", required=True, default=1, type=int)
@@ -87,8 +87,10 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     train_images, train_masks, valid_images, valid_masks = get_images(
-        root_path='../data/'    
+        root_path='../data'
     )
+
+
 
     classes_to_train = ALL_CLASSES
 

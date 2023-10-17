@@ -1,5 +1,5 @@
 # CLASSIFICADORES QUE VOCÊ QUER TESTAR
-#arqs=(deeplabv3_resnet101 deeplabv3_resnet50 fcn_resnet50)
+#arqs=(deeplabv3_resnet101 | deeplabv3_resnet50 | fcn_resnet50)
 arqs=(deeplabv3_resnet101)
 
 mkdir -p ../results
@@ -7,7 +7,7 @@ rm -rf ../results/*
 mkdir -p ../results/history
 
 # OPTIMIZADORES
-#opt=(adam sgd adagrad lion sam)
+#opt=(adam | sgd | adagrad)
 opt=(adam)
 
 # LEARNING RATES

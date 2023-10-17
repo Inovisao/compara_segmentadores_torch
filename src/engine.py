@@ -24,10 +24,6 @@ def train(
     num_classes = len(classes_to_train)
     iou_eval = IOUEval(num_classes)
 
-    #print("DATASET", train_dataloader.dataset[0])
-    #for i in prog_bar:
-    #    print(i)   
-
     for i, data in enumerate(prog_bar):
         counter += 1
         data, target = data[0].to(device), data[1].to(device)

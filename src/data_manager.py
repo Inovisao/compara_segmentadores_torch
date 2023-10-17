@@ -1,5 +1,6 @@
 import glob
 import numpy as np
+import os
 import torch
 import albumentations as A
 import cv2
@@ -12,11 +13,11 @@ def get_images(root_path):
     print(root_path)
     train_images = glob.glob(f"{root_path}/train/imagens/*")
     train_images.sort()
-    train_masks = glob.glob(f"{root_path}/labels/*")
+    train_masks = glob.glob(f"{root_path}/masks/*")
     train_masks.sort()
     valid_images = glob.glob(f"{root_path}/test/imagens/*")
     valid_images.sort()
-    valid_masks = glob.glob(f"{root_path}/labels/*")
+    valid_masks = glob.glob(f"{root_path}/masks/*")
     valid_masks.sort()
 
     return train_images, train_masks, valid_images, valid_masks
@@ -73,12 +74,19 @@ class SegmentationDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, index):
-        image = cv2.imread(self.image_paths[index], cv2.IMREAD_COLOR)
+        image = cv2.imread(self.image_paths[index])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype('float32')
         image = image / 255.0
-        mask = cv2.imread(self.mask_paths[index], cv2.IMREAD_COLOR)
+        mask_name = str("../data/masks/" + self.image_paths[index][:-4].split("/")[-1] + ".png")
+        mask = cv2.imread(mask_name, cv2.IMREAD_COLOR)
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB).astype('float32')
-
+        
+        if image.shape[1] != mask.shape[1]:
+            print()
+            print(image.shape, mask.shape)
+            print(self.image_paths[index])
+            print(self.mask_paths[index])
+        
         transformed = self.tfms(image=image, mask=mask)
         image = transformed['image']
         mask = transformed['mask']
@@ -126,10 +134,10 @@ def get_dataset(
 
 def get_data_loaders(train_dataset, valid_dataset, batch_size):
     train_data_loader = DataLoader(
-        train_dataset, batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"], drop_last=False
+        train_dataset, batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"], drop_last=False, num_workers=10
     )
     valid_data_loader = DataLoader(
-        valid_dataset, batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"], drop_last=False
+        valid_dataset, batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"], drop_last=False, num_workers=10
     )
 
     return train_data_loader, valid_data_loader
