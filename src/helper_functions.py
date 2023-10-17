@@ -144,7 +144,7 @@ def save_plots(
     train_acc, valid_acc, 
     train_loss, valid_loss, 
     train_miou, valid_miou, 
-    out_dir
+    out_dir_results
 ):
     """
     Function to save the loss and accuracy plots to disk.
@@ -162,7 +162,7 @@ def save_plots(
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.savefig(os.path.join(out_dir, 'accuracy.png'))
+    plt.savefig(os.path.join(out_dir_results, 'accuracy.png'))
     
     # Loss plots.
     plt.figure(figsize=(10, 7))
@@ -177,7 +177,7 @@ def save_plots(
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(os.path.join(out_dir, 'loss.png'))
+    plt.savefig(os.path.join(out_dir_results, 'loss.png'))
 
     # mIOU plots.
     plt.figure(figsize=(10, 7))
@@ -192,7 +192,7 @@ def save_plots(
     plt.xlabel('Epochs')
     plt.ylabel('mIoU')
     plt.legend()
-    plt.savefig(os.path.join(out_dir, 'miou.png'))
+    plt.savefig(os.path.join(out_dir_results, 'miou.png'))
 
 def get_segment_labels(image, model, device):
     image = image.unsqueeze(0).to(device) # add a batch dimension

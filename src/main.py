@@ -45,8 +45,12 @@ if __name__ == '__main__':
     out_dir = os.path.join('..', 'outputs')
     out_dir_valid_preds = os.path.join('..', 'outputs', 'valid_preds')
     out_dir_checkpoints = os.path.join('..','model_checkpoints')
+    out_dir_results = os.path.join('..','results','history')
+    #out_dir_plots = os.path.join('..','outputs','results')
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
+    os.makedirs(out_dir_checkpoints, exist_ok=True)
+   # os.makedirs(out_dir_plots,exist_ok=True)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = get_architecture(args ["architecture"],
                              in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], 
@@ -169,6 +173,6 @@ if __name__ == '__main__':
         train_pix_acc, valid_pix_acc, 
         train_loss, valid_loss,
         train_miou, valid_miou, 
-        out_dir
+        out_dir_results,
     )
     print('TRAINING COMPLETE')
