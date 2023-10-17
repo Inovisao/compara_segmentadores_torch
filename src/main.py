@@ -147,13 +147,15 @@ if __name__ == '__main__':
         valid_loss.append(valid_epoch_loss)
         valid_pix_acc.append(valid_epoch_pixacc)
         valid_miou.append(valid_epoch_miou)
-
-        save_best_model(
-            valid_epoch_loss, epoch, model, out_dir_checkpoints, name='model_loss'
-        )
-        save_best_iou(
-            valid_epoch_miou, epoch, model, out_dir_checkpoints, name='model_iou'
-        )
+    
+        if save_best_model(valid_epoch_loss, 
+                           epoch, 
+                           model, 
+                           out_dir_checkpoints, 
+                           name='model_loss'): 
+            break
+        
+        save_best_iou(valid_epoch_miou, epoch, model, out_dir_checkpoints, name='model_iou')
 
         print(
             f"Train Epoch Loss: {train_epoch_loss:.4f},",
