@@ -7,7 +7,7 @@ from engine import train, validate
 from config import ALL_CLASSES, LABEL_COLORS_LIST
 from data_hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
 from arch_optim import get_optimizer,get_architecture
-from helper_functions import save_model, SaveBestModel, save_plots, SaveBestModelIOU
+from helper_functions import SaveBestModel, save_plots
 from torch.optim.lr_scheduler import MultiStepLR
 from architectures import *
 
@@ -111,12 +111,13 @@ if __name__ == '__main__':
 
     # Initialize `SaveBestModel` class.
     save_best_model = SaveBestModel()
-    save_best_iou = SaveBestModelIOU()
 
     # LR Scheduler.
     scheduler = MultiStepLR(
         optimizer, milestones=[60], gamma=0.1, verbose=True
     )
+    
+    name = str(args["run"] + '_' + args["architecture"]+'_'+args["optimizer"])
 
     EPOCHS = MODEL_HYPERPARAMETERS["EPOCHS"]
     train_loss, train_pix_acc, train_miou = [], [], []
@@ -148,15 +149,14 @@ if __name__ == '__main__':
         valid_pix_acc.append(valid_epoch_pixacc)
         valid_miou.append(valid_epoch_miou)
     
-        if save_best_model(valid_epoch_loss, 
+        patience_is_over = save_best_model(valid_epoch_loss, 
                            epoch, 
                            model, 
                            out_dir_checkpoints, 
-                           name='model_loss'): 
-            break
+                           name=name+'_loss')
         
-        save_best_iou(valid_epoch_miou, epoch, model, out_dir_checkpoints, name='model_iou')
-
+        if patience_is_over: break
+        
         print(
             f"Train Epoch Loss: {train_epoch_loss:.4f},",
             f"Train Epoch PixAcc: {train_epoch_pixacc:.4f},",
@@ -171,7 +171,7 @@ if __name__ == '__main__':
             scheduler.step()
         print('-' * 50)
 
-    save_model(EPOCHS, model, optimizer, criterion, out_dir_checkpoints, name='model')
+ 
     # Save the loss and accuracy plots.
     save_plots(
         train_pix_acc, valid_pix_acc, 
@@ -180,3 +180,8 @@ if __name__ == '__main__':
         out_dir_results,
     )
     print('TRAINING COMPLETE')
+
+    #Carrega o modelo pré-treinado
+    model.load_state_dict(torch.load(os.path.join(out_dir_checkpoints, name+".pth")))
+    
+    

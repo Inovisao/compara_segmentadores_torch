@@ -101,7 +101,7 @@ class SaveBestModel:
     def __init__(self, best_valid_loss=float('inf'), ):
         self.best_valid_loss = best_valid_loss
         
-    def __call__(self, current_valid_loss, epoch, model, out_dir, name='model'):
+    def __call__(self, current_valid_loss, epoch, model, out_dir, name):
         bk = False
         if current_valid_loss < (self.best_valid_loss-self.TOLERANCE):
             self.best_valid_loss = current_valid_loss
@@ -110,7 +110,7 @@ class SaveBestModel:
             torch.save({
                 'epoch': epoch+1,
                 'model_state_dict': model.state_dict(),
-                }, os.path.join(out_dir, 'best_'+name+'.pth'))
+                }, os.path.join(out_dir, name+'.pth'))
             self.NoImprovement = 0
         else:
             self.NoImprovement += 1
@@ -120,36 +120,6 @@ class SaveBestModel:
             bk = True
         
         return bk
-
-class SaveBestModelIOU:
-    """
-    Class to save the best model while training. If the current epoch's 
-    IoU is higher than the previous highest, then save the
-    model state.
-    """
-    def __init__(self, best_iou=float(0)):
-        self.best_iou = best_iou
-        
-    def __call__(self, current_iou, epoch, model, out_dir_checkpoints, name='model'):
-        if current_iou > self.best_iou:
-            self.best_iou = current_iou
-            print(f"\nBest validation IoU: {self.best_iou}")
-            print(f"\nSaving best model for epoch: {epoch+1}\n")
-            torch.save({
-                'epoch': epoch+1,
-                'model_state_dict': model.state_dict(),
-                }, os.path.join(out_dir_checkpoints, 'best_'+name+'.pth'))
-
-def save_model(epochs, model, optimizer, criterion, out_dir_checkpoints, name='model'):
-    """
-    Function to save the trained model to disk.
-    """
-    torch.save({
-                'epoch': epochs,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': criterion,
-                }, os.path.join(out_dir_checkpoints, name+'.pth'))
 
 def save_plots(
     train_acc, valid_acc, 
