@@ -82,7 +82,6 @@ if __name__ == '__main__':
         p.numel() for p in model.parameters() if p.requires_grad)
     print(f"{total_trainable_params:,} training parameters.")
 
-    #optimizer = torch.optim.SGD(model.parameters(), lr=args['learning_rate'])
     optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args['learning_rate'])
     criterion = nn.CrossEntropyLoss()
 
@@ -114,10 +113,10 @@ if __name__ == '__main__':
 
     # LR Scheduler.
     scheduler = MultiStepLR(
-        optimizer, milestones=[60], gamma=0.1, verbose=True
-    )
+        optimizer, milestones=[MODEL_HYPERPARAMETERS["LR_SCHEDULER"]], gamma=0.1, verbose=False
+        )
     
-    name = str(args["run"] + '_' + args["architecture"]+'_'+args["optimizer"])
+    name = str(f"{args['run']}_{args['architecture']}_{args['optimizer']}")
 
     EPOCHS = MODEL_HYPERPARAMETERS["EPOCHS"]
     train_loss, train_pix_acc, train_miou = [], [], []
@@ -153,7 +152,7 @@ if __name__ == '__main__':
                            epoch, 
                            model, 
                            out_dir_checkpoints, 
-                           name=name+'_loss')
+                           name)
         
         if patience_is_over: break
         
@@ -167,9 +166,12 @@ if __name__ == '__main__':
             f"Valid Epoch PixAcc: {valid_epoch_pixacc:.4f}",
             f"Valid Epoch mIOU: {valid_epoch_miou:4f}"
         )
-        if scheduler:
+        if MODEL_HYPERPARAMETERS["USE_LR_SCHEDULER"] == True:
             scheduler.step()
+        else:
+            pass
         print('-' * 50)
+
 
  
     # Save the loss and accuracy plots.
