@@ -22,8 +22,8 @@ MODEL_HYPERPARAMETERS = {
     "USE_TRANSFER_LEARNING" : True,
     "PATIENCE" : 10,
     "TOLERANCE" : 0.1,
-    "USE_LR_SCHEDULER" : False,
-    "LR_SCHEDULER" : 60 #epocas para ajustar o Learning Rate
+    "USE_LR_SCHEDULER" : False, #Learning Rate se ajusta a cada X épocas
+    "LR_SCHEDULER" : 60 #epocas para ajuste do scheduler
 }
 
 DATA_AUGMENTATION = {
