@@ -4,23 +4,24 @@ import os
 import torch
 import albumentations as A
 import cv2
-
+import PIL
 from helper_functions import get_label_mask, set_class_values
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader,Subset
 from data_hyperparameters import DATA_AUGMENTATION, DATA_HYPERPARAMETERS
+from sklearn.model_selection import train_test_split
 
 def get_images(root_path):
-    print(root_path)
+    #print(root_path)
     train_images = glob.glob(f"{root_path}/train/imagens/*")
     train_images.sort()
     train_masks = glob.glob(f"{root_path}/masks/*")
     train_masks.sort()
-    valid_images = glob.glob(f"{root_path}/test/imagens/*")
-    valid_images.sort()
-    valid_masks = glob.glob(f"{root_path}/masks/*")
-    valid_masks.sort()
-
-    return train_images, train_masks, valid_images, valid_masks
+    test_images = glob.glob(f"{root_path}/test/imagens/*")
+    test_images.sort()
+    test_masks = glob.glob(f"{root_path}/masks/*")
+    test_masks.sort()
+    
+    return train_images, train_masks, test_images, test_masks
 
 def train_transforms(img_size):
     """
@@ -38,16 +39,11 @@ def train_transforms(img_size):
     ])
     return train_image_transform
 
-def valid_transforms(img_size):
-    """
-    Transforms/augmentations for validation images and masks.
-
-    :param img_size: Integer, for image resize.
-    """
-    valid_image_transform = A.Compose([
-        A.Resize(img_size, img_size, always_apply=True),
+def test_transforms(img_size):
+    test_image_transform = A.Compose([
+        A.Resize(img_size, img_size, always_apply=False)
     ])
-    return valid_image_transform
+    return test_image_transform
 
 class SegmentationDataset(Dataset):
     def __init__(
@@ -98,21 +94,23 @@ class SegmentationDataset(Dataset):
         
         image = torch.tensor(image, dtype=torch.float)
         mask = torch.tensor(mask, dtype=torch.long) 
-
+       # print(image.shape,mask.shape)
+        
+        
         return image, mask
 
 def get_dataset(
     train_image_paths, 
     train_mask_paths,
-    valid_image_paths,
-    valid_mask_paths,
+    test_image_paths,
+    test_mask_paths,
     all_classes,
     classes_to_train,
     label_colors_list,
     img_size
 ):
     train_tfms = train_transforms(img_size)
-    valid_tfms = valid_transforms(img_size)
+    test_tfms = test_transforms(img_size)
 
     train_dataset = SegmentationDataset(
         train_image_paths,
@@ -122,22 +120,51 @@ def get_dataset(
         classes_to_train,
         all_classes
     )
-    valid_dataset = SegmentationDataset(
-        valid_image_paths,
-        valid_mask_paths,
-        valid_tfms,
+    test_dataset = SegmentationDataset(
+        test_image_paths,
+        test_mask_paths,
+        test_tfms,
         label_colors_list,
         classes_to_train,
         all_classes
     )
-    return train_dataset, valid_dataset
+    return train_dataset, test_dataset
 
-def get_data_loaders(train_dataset, valid_dataset, batch_size):
-    train_data_loader = DataLoader(
-        train_dataset, batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"], drop_last=False, num_workers=10
+def print_data_informations(train_data, val_data, test_data, train_dataloader):
+    for X, y in train_dataloader:
+        print(f"Images batch size: {X.shape[0]}")
+        print(f"Number of channels: {X.shape[1]}")
+        print(f"Height: {X.shape[2]}")
+        print(f"Width: {X.shape[3]}")
+        print(f"Labels batch size: {y.shape[0]}")
+        print(f"Label data type: {y.dtype}")
+        break
+    
+    total_images = len(train_data) + len(val_data) + len(test_data)
+    print(f"Total number of images: {total_images}")
+    print(f"Number of training images: {len(train_data)} ({100 * len(train_data) / total_images:>2f}%)")
+    print(f"Number of validation images: {len(val_data)} ({100 * len(val_data) / total_images:>2f}%)")
+    print(f"Number of test images: {len(test_data)} ({100 * len(test_data) / total_images:>2f}%)")
+    
+    labels_map = DATA_HYPERPARAMETERS["CLASSES"]
+    print(f"\nClasses: {labels_map}")
+
+def get_data_loaders(train_dataset,test_dataset,val_split=DATA_HYPERPARAMETERS["VAL_SPLIT"], batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"]):
+    train_idx, val_idx = train_test_split(list(range(len(train_dataset))), test_size=val_split)
+    
+    val_dataset = Subset(train_dataset, val_idx)
+    train_dataset = Subset(train_dataset, train_idx)
+    
+    train_dataloader = DataLoader(
+        train_dataset, batch_size, drop_last=False, num_workers=10
     )
-    valid_data_loader = DataLoader(
-        valid_dataset, batch_size=DATA_HYPERPARAMETERS["BATCH_SIZE"], drop_last=False, num_workers=10
+    val_dataloader = DataLoader(
+        val_dataset, batch_size, drop_last=False, num_workers=10
+    )
+    test_dataloader = DataLoader(
+        test_dataset, batch_size, drop_last=False, num_workers=10
     )
 
-    return train_data_loader, valid_data_loader
+    print_data_informations(train_dataset, val_dataset, test_dataset, train_dataloader)
+    
+    return train_dataloader,val_dataloader,test_dataloader

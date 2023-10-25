@@ -3,7 +3,7 @@ import torch.nn as nn
 import os
 import argparse
 from data_manager import get_images, get_dataset, get_data_loaders
-from engine import train, validate
+from engine import train, validate, test
 from config import ALL_CLASSES, LABEL_COLORS_LIST
 from data_hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
 from arch_optim import get_optimizer,get_architecture
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args['learning_rate'])
     criterion = nn.CrossEntropyLoss()
 
-    train_images, train_masks, valid_images, valid_masks = get_images(
+    train_images, train_masks, test_images, test_masks = get_images(
         root_path='../data'
     )
 
@@ -93,20 +93,18 @@ if __name__ == '__main__':
 
     classes_to_train = ALL_CLASSES
 
-    train_dataset, valid_dataset = get_dataset(
+    train_dataset, test_dataset = get_dataset(
         train_images, 
         train_masks,
-        valid_images,
-        valid_masks,
+        test_images,
+        test_masks,
         ALL_CLASSES,
         classes_to_train,
         LABEL_COLORS_LIST,
         img_size=DATA_HYPERPARAMETERS["IMAGE_SIZE"],
     )
 
-    train_dataloader, valid_dataloader = get_data_loaders(
-        train_dataset, valid_dataset, batch_size=DATA_HYPERPARAMETERS['BATCH_SIZE']
-    )
+    train_dataloader,val_dataloader, test_dataloader = get_data_loaders(train_dataset, test_dataset, batch_size=DATA_HYPERPARAMETERS['BATCH_SIZE'])
 
     # Initialize `SaveBestModel` class.
     save_best_model = SaveBestModel()
@@ -131,9 +129,9 @@ if __name__ == '__main__':
             criterion,
             classes_to_train
         )
-        valid_epoch_loss, valid_epoch_pixacc, valid_epoch_miou = validate(
+        valid_epoch_loss, valid_epoch_pixacc, valid_epoch_miou= validate(
             model,
-            valid_dataloader,
+            val_dataloader,
             device,
             criterion,
             classes_to_train,
@@ -147,6 +145,7 @@ if __name__ == '__main__':
         valid_loss.append(valid_epoch_loss)
         valid_pix_acc.append(valid_epoch_pixacc)
         valid_miou.append(valid_epoch_miou)
+
     
         patience_is_over = save_best_model(valid_epoch_loss, 
                            epoch, 
@@ -178,12 +177,36 @@ if __name__ == '__main__':
     save_plots(
         train_pix_acc, valid_pix_acc, 
         train_loss, valid_loss,
-        train_miou, valid_miou, 
+        train_miou, valid_miou,
         out_dir_results,
     )
     print('TRAINING COMPLETE')
 
     #Carrega o modelo pré-treinado
-    model.load_state_dict(torch.load(os.path.join(out_dir_checkpoints, name+".pth")))
+    model.load_state_dict(torch.load(os.path.join(out_dir_checkpoints, name + ".pth"))["model_state_dict"])
     
+    # Define the paths to save the confusion matrix files.
+    if not os.path.exists("../results/matrix/"):
+        os.makedirs("../results/matrix/")
+        
+    path_to_matrix_csv = "../results/matrix/" + name + "_MATRIX.csv"    
+    path_to_matrix_png = "../results/matrix/" + name + "_MATRIX.png"
     
+
+    # Test, save the results and get precision, recall and fscore.
+    precision, recall, fscore = test(dataloader=test_dataloader,
+                                                      model=model, 
+                                                      path_to_save_matrix_csv=path_to_matrix_csv, 
+                                                      path_to_save_matrix_png=path_to_matrix_png,
+                                                      labels_map=DATA_HYPERPARAMETERS["CLASSES"])
+
+
+    #Create a string with run, learning rate, architecture,
+    # optimizer, precision, recall and fscore, to append to the csv file:
+    results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
+        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
+
+    # Open file, write and close.
+    f = open("../results_dl/results.csv", "a")
+    f.write(results)
+    f.close()
