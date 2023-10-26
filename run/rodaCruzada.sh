@@ -32,7 +32,7 @@ mkdir -p ../results_dl/
 rm -rf ../results_dl/*
 
 mkdir -p ../model_checkpoints/
-rm -rf ../model_checkpoints/*
+#rm -rf ../model_checkpoints/*
 
 #echo  'run,architecture,optimizer,learning_rate,image,actual,predicted,loss' > ../results_dl/results.csv
 

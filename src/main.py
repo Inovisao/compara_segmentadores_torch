@@ -11,7 +11,6 @@ from helper_functions import SaveBestModel, save_plots
 from torch.optim.lr_scheduler import MultiStepLR
 from architectures import *
 
-
 def get_args():
     """
     This function gets the arguments of the program, that is, the architecture, the optimizer and the learning rate.
@@ -41,16 +40,17 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
+    Testa = DATA_HYPERPARAMETERS["APENAS_TESTA"]
     # Create a directory with the model name for outputs.
     out_dir = os.path.join('..', 'outputs')
     out_dir_valid_preds = os.path.join('..', 'outputs', 'valid_preds')
     out_dir_checkpoints = os.path.join('..','model_checkpoints')
     out_dir_results = os.path.join('..','results','history')
-    #out_dir_plots = os.path.join('..','outputs','results')
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
     os.makedirs(out_dir_checkpoints, exist_ok=True)
-   # os.makedirs(out_dir_plots,exist_ok=True)
+
+        
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = get_architecture(args ["architecture"],
                              in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], 
@@ -78,9 +78,9 @@ if __name__ == '__main__':
     # Total parameters and trainable parameters.
     total_params = sum(p.numel() for p in model.parameters())
     print(f"{total_params:,} total parameters.")
-    total_trainable_params = sum(
-        p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"{total_trainable_params:,} training parameters.")
+    if(not Testa):
+        total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"{total_trainable_params:,} training parameters.")
 
     optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args['learning_rate'])
     criterion = nn.CrossEntropyLoss()
@@ -89,8 +89,8 @@ if __name__ == '__main__':
         root_path='../data'
     )
 
-
-
+    name = str(f"{args['run']}_{args['architecture']}_{args['optimizer']}")
+    
     classes_to_train = ALL_CLASSES
 
     train_dataset, test_dataset = get_dataset(
@@ -105,83 +105,84 @@ if __name__ == '__main__':
     )
 
     train_dataloader,val_dataloader, test_dataloader = get_data_loaders(train_dataset, test_dataset, batch_size=DATA_HYPERPARAMETERS['BATCH_SIZE'])
-
-    # Initialize `SaveBestModel` class.
-    save_best_model = SaveBestModel()
-
-    # LR Scheduler.
-    scheduler = MultiStepLR(
-        optimizer, milestones=[MODEL_HYPERPARAMETERS["LR_SCHEDULER"]], gamma=0.1, verbose=False
-        )
     
-    name = str(f"{args['run']}_{args['architecture']}_{args['optimizer']}")
+    if(not Testa):
 
-    EPOCHS = MODEL_HYPERPARAMETERS["EPOCHS"]
-    train_loss, train_pix_acc, train_miou = [], [], []
-    valid_loss, valid_pix_acc, valid_miou = [], [], []
-    for epoch in range (EPOCHS):
-        print(f"EPOCH: {epoch + 1}")
-        train_epoch_loss, train_epoch_pixacc, train_epoch_miou = train(
-            model,
-            train_dataloader,
-            device,
-            optimizer,
-            criterion,
-            classes_to_train
-        )
-        valid_epoch_loss, valid_epoch_pixacc, valid_epoch_miou= validate(
-            model,
-            val_dataloader,
-            device,
-            criterion,
-            classes_to_train,
-            LABEL_COLORS_LIST,
-            epoch,
-            save_dir=out_dir_valid_preds
-        )
-        train_loss.append(train_epoch_loss)
-        train_pix_acc.append(train_epoch_pixacc)
-        train_miou.append(train_epoch_miou)
-        valid_loss.append(valid_epoch_loss)
-        valid_pix_acc.append(valid_epoch_pixacc)
-        valid_miou.append(valid_epoch_miou)
+        # Initialize `SaveBestModel` class.
+        save_best_model = SaveBestModel()
+
+        # LR Scheduler.
+        scheduler = MultiStepLR(
+            optimizer, milestones=[MODEL_HYPERPARAMETERS["LR_SCHEDULER"]], gamma=0.1, verbose=False
+            )
+
+        EPOCHS = MODEL_HYPERPARAMETERS["EPOCHS"]
+        train_loss, train_pix_acc, train_miou = [], [], []
+        valid_loss, valid_pix_acc, valid_miou = [], [], []
+        for epoch in range (EPOCHS):
+            print(f"EPOCH: {epoch + 1}")
+            train_epoch_loss, train_epoch_pixacc, train_epoch_miou = train(
+                model,
+                train_dataloader,
+                device,
+                optimizer,
+                criterion,
+                classes_to_train
+            )
+            valid_epoch_loss, valid_epoch_pixacc, valid_epoch_miou= validate(
+                model,
+                val_dataloader,
+                device,
+                criterion,
+                classes_to_train,
+                LABEL_COLORS_LIST,
+                epoch,
+                save_dir=out_dir_valid_preds
+            )
+            train_loss.append(train_epoch_loss)
+            train_pix_acc.append(train_epoch_pixacc)
+            train_miou.append(train_epoch_miou)
+            valid_loss.append(valid_epoch_loss)
+            valid_pix_acc.append(valid_epoch_pixacc)
+            valid_miou.append(valid_epoch_miou)
+
+        
+            patience_is_over = save_best_model(valid_epoch_loss, 
+                            epoch, 
+                            model, 
+                            out_dir_checkpoints, 
+                            name)
+            
+            if patience_is_over: break
+            
+            print(
+                f"Train Epoch Loss: {train_epoch_loss:.4f},",
+                f"Train Epoch PixAcc: {train_epoch_pixacc:.4f},",
+                f"Train Epoch mIOU: {train_epoch_miou:4f}"
+            )
+            print(
+                f"Valid Epoch Loss: {valid_epoch_loss:.4f},", 
+                f"Valid Epoch PixAcc: {valid_epoch_pixacc:.4f}",
+                f"Valid Epoch mIOU: {valid_epoch_miou:4f}"
+            )
+            if MODEL_HYPERPARAMETERS["USE_LR_SCHEDULER"] == True:
+                scheduler.step()
+            else:
+                pass
+            print('-' * 50)
+
 
     
-        patience_is_over = save_best_model(valid_epoch_loss, 
-                           epoch, 
-                           model, 
-                           out_dir_checkpoints, 
-                           name)
-        
-        if patience_is_over: break
-        
-        print(
-            f"Train Epoch Loss: {train_epoch_loss:.4f},",
-            f"Train Epoch PixAcc: {train_epoch_pixacc:.4f},",
-            f"Train Epoch mIOU: {train_epoch_miou:4f}"
+        # Save the loss and accuracy plots.
+        save_plots(
+            train_pix_acc, valid_pix_acc, 
+            train_loss, valid_loss,
+            train_miou, valid_miou,
+            out_dir_results,
         )
-        print(
-            f"Valid Epoch Loss: {valid_epoch_loss:.4f},", 
-            f"Valid Epoch PixAcc: {valid_epoch_pixacc:.4f}",
-            f"Valid Epoch mIOU: {valid_epoch_miou:4f}"
-        )
-        if MODEL_HYPERPARAMETERS["USE_LR_SCHEDULER"] == True:
-            scheduler.step()
-        else:
-            pass
-        print('-' * 50)
+        print('TRAINING COMPLETE')
 
-
- 
-    # Save the loss and accuracy plots.
-    save_plots(
-        train_pix_acc, valid_pix_acc, 
-        train_loss, valid_loss,
-        train_miou, valid_miou,
-        out_dir_results,
-    )
-    print('TRAINING COMPLETE')
-
+    print("Testing...")
     #Carrega o modelo pré-treinado
     model.load_state_dict(torch.load(os.path.join(out_dir_checkpoints, name + ".pth"))["model_state_dict"])
     
@@ -195,10 +196,10 @@ if __name__ == '__main__':
 
     # Test, save the results and get precision, recall and fscore.
     precision, recall, fscore = test(dataloader=test_dataloader,
-                                                      model=model, 
-                                                      path_to_save_matrix_csv=path_to_matrix_csv, 
-                                                      path_to_save_matrix_png=path_to_matrix_png,
-                                                      labels_map=DATA_HYPERPARAMETERS["CLASSES"])
+                                    model=model, 
+                                    path_to_save_matrix_csv=path_to_matrix_csv, 
+                                    path_to_save_matrix_png=path_to_matrix_png,
+                                    labels_map=DATA_HYPERPARAMETERS["CLASSES"])
 
 
     #Create a string with run, learning rate, architecture,

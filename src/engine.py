@@ -8,11 +8,8 @@ import torch
 from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
 from helper_functions import draw_translucent_seg_maps
 from metrics import IOUEval
-from torchmetrics import Recall, Precision, F1Score
-from torch.nn.functional import softmax
 import sys
-from torchvision import transforms
-
+import numpy as np
 
 device = MODEL_HYPERPARAMETERS["DEVICE"]
 #test
@@ -27,8 +24,6 @@ def train(
     print('Training')
     model.train()
     train_running_loss = 0.0
-    # Calculate the number of batches.
-    num_batches = len(train_dataloader)
     counter = 0 # to keep track of batch counter
     num_classes = len(classes_to_train)
     iou_eval = IOUEval(num_classes)
@@ -120,7 +115,7 @@ def validate(
     overall_acc, per_class_acc, per_class_iu, mIOU = iou_eval.getMetric()
     return valid_loss, overall_acc, mIOU
 
-def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
+def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,labels_map):
     """
     This function tests a model.
     Args:
@@ -181,8 +176,11 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     # Get the classes for the matrix.
     classes = DATA_HYPERPARAMETERS["CLASSES"]
 
+    # Normaliza a matriz para o intervalo 0 e 1 e arredonda em 2 casas decimais
+    # cada célula
+    matrix_normalizada = np.round(matrix/np.sum(matrix),2)
     # Convert the matrix into a pandas dataframe.
-    df_matrix = pd.DataFrame(matrix)
+    df_matrix = pd.DataFrame(matrix_normalizada)
 
     # Save the matrix as a csv file.
     df_matrix.to_csv(path_to_save_matrix_csv)

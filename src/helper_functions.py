@@ -4,7 +4,6 @@ import torch
 import os
 import matplotlib.pyplot as plt
 from data_hyperparameters import MODEL_HYPERPARAMETERS
-from torchvision import transforms
 from config import (
     VIS_LABEL_MAP as viz_map
 )
