@@ -2,11 +2,10 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sn
 from sklearn import metrics
 import torch
 from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
-from helper_functions import draw_translucent_seg_maps
+from helper_functions import draw_translucent_seg_maps, plot_segmentation
 from metrics import IOUEval
 import sys
 import numpy as np
@@ -139,11 +138,13 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,lab
 
     # Initialize the number of correct predictions with value 0.
     test_correct = 0
-
+    
+    plot = plt.figure(num=1)
+    
     #Proceed without calculating the gradients.
     with torch.no_grad():
         # Iterate over the data.
-        for img, label in dataloader:
+        for img, label, filename in dataloader:
             # Send images and labels to the correct device.
             img, label = img.to(device, dtype=torch.float), label.to(device)
 
@@ -151,9 +152,11 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,lab
             prediction = dict(model(img))["out"]
         
             #prediction_prob_values = softmax(prediction)
-
+    
             # Get the index of the prediction with the highest probability.
             prediction = prediction.argmax(1)
+            
+            plot_segmentation(prediction.cpu(), filename, plot)
             
             # Append predictions and labels to the lists initialized earlier.
             # Also, send both predictions and labels to the cpu.
@@ -170,11 +173,14 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,lab
     # Calculate the accuracy.
     acc = test_correct / pixels
 
-    # Create the confusion matrix.
-    matrix = metrics.confusion_matrix(labels, predictions)
-
     # Get the classes for the matrix.
     classes = DATA_HYPERPARAMETERS["CLASSES"]
+    
+    #print(classes)
+    #input()
+    
+    # Create the confusion matrix.
+    matrix = metrics.confusion_matrix(y_true=labels, y_pred=predictions, labels=[i for i in range(len(classes))])
 
     # Normaliza a matriz para o intervalo 0 e 1 e arredonda em 2 casas decimais
     # cada célula
@@ -187,16 +193,19 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,lab
 
     # Create a graphical matrix.
     plt.figure()
-    sn.heatmap(df_matrix, annot=True, yticklabels=classes, xticklabels=classes)
+    #sn.heatmap(df_matrix, annot=True, yticklabels=classes, xticklabels=classes)
+    cm_plot = metrics.ConfusionMatrixDisplay(confusion_matrix=matrix_normalizada, display_labels=classes)
+    cm_plot.plot()
     plt.title("Confusion matrix", fontsize=14)
     plt.xlabel("Predicted", fontsize=12)
     plt.ylabel("True", fontsize=12)
+    plt.grid(False)
 
     # Save the figure.
     plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
     
     # Get some metrics.
-    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, average="macro")
+    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, average="macro", zero_division=0)
 
     # Write some results.
     print(f"Total number of predictions: {len(dataloader.dataset)}.")

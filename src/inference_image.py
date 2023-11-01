@@ -3,9 +3,10 @@ import argparse
 import cv2
 import os
 
-from helper_functions import get_segment_labels, draw_segmentation_map, image_overlay
-from config import ALL_CLASSES
+from helper_functions import get_segment_labels, draw_segmentation_map, image_overlay, load_class_data
 from architectures import resnet101
+
+ALL_CLASSES = load_class_data["ALL_CLASSES"]
 
 # Construct the argument parser.
 parser = argparse.ArgumentParser()

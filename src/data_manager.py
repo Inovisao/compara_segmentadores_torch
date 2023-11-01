@@ -4,12 +4,12 @@ import torch
 import albumentations as A
 import cv2
 from helper_functions import get_label_mask, set_class_values
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader,Subset
 from data_hyperparameters import DATA_AUGMENTATION, DATA_HYPERPARAMETERS
 from sklearn.model_selection import train_test_split
 
 def get_images(root_path):
-    #print(root_path)
     train_images = glob.glob(f"{root_path}/train/imagens/*")
     train_images.sort()
     train_masks = glob.glob(f"{root_path}/masks/*")
@@ -71,23 +71,30 @@ class SegmentationDataset(Dataset):
         image = cv2.imread(self.image_paths[index])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype('float32')
         image = image / 255.0
+        
         mask_name = str("../data/masks/" + self.image_paths[index][:-4].split("/")[-1] + ".png")
         mask = cv2.imread(mask_name, cv2.IMREAD_COLOR)
-        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB).astype('float32')
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB).astype('int32')
+
+        # if image.shape[1] != mask.shape[1]:
+        #     print()
+        #     print(image.shape, mask.shape)
+        #     print(self.image_paths[index])
+        #     print(self.mask_paths[index])
         
-        if image.shape[1] != mask.shape[1]:
-            print()
-            print(image.shape, mask.shape)
-            print(self.image_paths[index])
-            print(self.mask_paths[index])
         
         transformed = self.tfms(image=image, mask=mask)
         image = transformed['image']
         mask = transformed['mask']
-        
+        #plt.imshow(mask)
+        #plt.show()
         # Get colored label mask.
         mask = get_label_mask(mask, self.class_values, self.label_colors_list)
-       
+        
+        
+        #plt.imshow(mask)
+        #plt.title(self.image_paths[index][:-4].split("/")[-1])
+        #plt.show()
         image = np.transpose(image, (2, 0, 1))
         
         image = torch.tensor(image, dtype=torch.float)
@@ -95,7 +102,7 @@ class SegmentationDataset(Dataset):
        # print(image.shape,mask.shape)
         
         
-        return image, mask
+        return image, mask, self.image_paths[index][:-4].split("/")[-1]
 
 def get_dataset(
     train_image_paths, 
@@ -129,7 +136,7 @@ def get_dataset(
     return train_dataset, test_dataset
 
 def print_data_informations(train_data, val_data, test_data, train_dataloader):
-    for X, y in train_dataloader:
+    for X, y, _ in train_dataloader:
         print(f"Images batch size: {X.shape[0]}")
         print(f"Number of channels: {X.shape[1]}")
         print(f"Height: {X.shape[2]}")

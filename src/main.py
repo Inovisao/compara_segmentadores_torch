@@ -4,12 +4,13 @@ import os
 import argparse
 from data_manager import get_images, get_dataset, get_data_loaders
 from engine import train, validate, test
-from config import ALL_CLASSES, LABEL_COLORS_LIST
+#from config import ALL_CLASSES, LABEL_COLORS_LIST
 from data_hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
 from arch_optim import get_optimizer,get_architecture
-from helper_functions import SaveBestModel, save_plots
 from torch.optim.lr_scheduler import MultiStepLR
 from architectures import *
+
+from helper_functions import SaveBestModel, save_plots
 
 def get_args():
     """
@@ -22,16 +23,16 @@ def get_args():
     arg_parser = argparse.ArgumentParser()
 
     # Parse the architecture.
-    arg_parser.add_argument("-a", "--architecture", required=True, default='deeplabv3_resnet101', type=str)
+    arg_parser.add_argument("-a", "--architecture", required=False, default='deeplabv3_resnet101', type=str)
     
     # Parse the optimizer.
-    arg_parser.add_argument("-o", "--optimizer", required=True, default='adam', type=str)
+    arg_parser.add_argument("-o", "--optimizer", required=False, default='adam', type=str)
 
     # Parse the number of the run.
-    arg_parser.add_argument("-r", "--run", required=True, default=1, type=int)
+    arg_parser.add_argument("-r", "--run", required=False, default=1, type=int)
     
     # Parse the learning rate.
-    arg_parser.add_argument("-l", "--learning_rate", required=True, default=0.001, type=float)
+    arg_parser.add_argument("-l", "--learning_rate", required=False, default=0.001, type=float)
 
     # Parse the arguments and return them as a dictionary.
     return vars(arg_parser.parse_args())
@@ -39,13 +40,15 @@ def get_args():
 
 
 if __name__ == '__main__':
+    ALL_CLASSES, LABEL_COLORS_LIST = DATA_HYPERPARAMETERS["CLASSES"], DATA_HYPERPARAMETERS["LABEL_COLORS_LIST"]
+    
     args = get_args()
     Testa = DATA_HYPERPARAMETERS["APENAS_TESTA"]
     # Create a directory with the model name for outputs.
     out_dir = os.path.join('..', 'outputs')
     out_dir_valid_preds = os.path.join('..', 'outputs', 'valid_preds')
-    out_dir_checkpoints = os.path.join('..','model_checkpoints')
-    out_dir_results = os.path.join('..','results','history')
+    out_dir_checkpoints = os.path.join('..', 'model_checkpoints')
+    out_dir_results = os.path.join('..', 'results', 'history')
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir_valid_preds, exist_ok=True)
     os.makedirs(out_dir_checkpoints, exist_ok=True)

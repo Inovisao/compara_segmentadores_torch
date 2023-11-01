@@ -1,14 +1,17 @@
 import numpy as np
 import cv2
 import torch
+from torchvision.transforms import functional
 import os
+import json
 import matplotlib.pyplot as plt
-from data_hyperparameters import MODEL_HYPERPARAMETERS
-from config import (
-    VIS_LABEL_MAP as viz_map
-)
+from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
+from PIL import Image
 
+from config import load_class_data
 plt.style.use('ggplot')
+
+viz_map = load_class_data()["VIS_LABEL_MAP"]
 
 def set_class_values(all_classes, classes_to_train):
     """
@@ -29,14 +32,17 @@ def get_label_mask(mask, class_values, label_colors_list):
     :param class_values: Lista contendo o valor da classe, ex.: car=0, bus=1.
     :param label_colors_list: Lista contendo o valor RGB de cada classe.
     """
+    
     label_mask = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
-    for value in class_values:
-        for ii, label in enumerate(label_colors_list):
-            if value == label_colors_list.index(label):
-                label = np.array(label)
-                label_mask[np.where(np.all(mask == label, axis=-1))[:2]] = value
-    label_mask = label_mask.astype(int)
+    
+    for class_id, color in zip(class_values, label_colors_list):
+        boolean_mask = np.all((mask[:, :, :] == color), axis=-1)
+        label_mask[boolean_mask] = class_id
+        
+    
     return label_mask
+    
+    
 
 def draw_translucent_seg_maps(
     data, 
@@ -60,10 +66,6 @@ def draw_translucent_seg_maps(
     image = data[0]
     image = np.array(image.cpu())
     image = np.transpose(image, (1, 2, 0))
-    # unnormalize the image (important step)
-    # mean = np.array([0.5, 0.5, 0.5])
-    # std = np.array([0.5, 0.5, 0.5])
-    # image = std * image + mean
     image = np.array(image, dtype=np.float32)
     image = image * 255
 
@@ -249,3 +251,44 @@ def save_validation_images(data, outputs, epoch, i, save_dir, label_colors_list)
         cv2.imwrite(image_path, overlaid_image)
 
         print(f"Imagem salva em: {image_path}")
+        
+        
+def plot_segmentation(prediction, filename, figure):
+    
+    color_map = DATA_HYPERPARAMETERS["LABEL_COLORS_LIST"]
+    
+    img_size = DATA_HYPERPARAMETERS["IMAGE_SIZE"]
+    
+    if not os.path.exists("../results_dl/predictions"):
+        os.mkdir("../results_dl/predictions")
+
+    for k, pred in enumerate(prediction):
+        print("Plotando teste da imagem:", filename[k])
+        
+        # Carregue a imagem original
+        original_image_path = os.path.join("../data/all/imagens", filename[k]+'.jpg')
+        original_image = Image.open(original_image_path)
+        
+        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="int8")
+        for i in range(img_size):
+            for j in range(img_size):
+                plot[i, j, :] = color_map[pred[i, j]]
+        
+        ax = figure.add_subplot()
+        
+        ax.set_title(filename[k])
+        
+        plot = Image.fromarray(plot, mode="RGB")
+        plot = plot.resize(size=(original_image.width, original_image.height))
+        
+        ax.imshow(plot, alpha=0.5)
+        ax.imshow(original_image, alpha=0.5)
+        
+        plt.axis('off')
+        ax.grid(False)
+        
+        figure.savefig(f"../results_dl/predictions/{filename[k]}.png", dpi=300, bbox_inches="tight")
+        
+        figure.clf()
+        
+    
