@@ -6,10 +6,9 @@ from data_manager import get_images, get_dataset, get_data_loaders
 from engine import train, validate, test
 #from config import ALL_CLASSES, LABEL_COLORS_LIST
 from data_hyperparameters import DATA_HYPERPARAMETERS, MODEL_HYPERPARAMETERS, DATA_AUGMENTATION
-from arch_optim import get_optimizer,get_architecture
 from torch.optim.lr_scheduler import MultiStepLR
 from architectures import *
-
+from optimizers import *
 from helper_functions import SaveBestModel, save_plots
 
 def get_args():
@@ -55,11 +54,9 @@ if __name__ == '__main__':
 
         
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = get_architecture(args ["architecture"],
-                             in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], 
-                             out_classes=DATA_HYPERPARAMETERS["NUM_CLASSES"], 
-                             pretrained=MODEL_HYPERPARAMETERS["USE_TRANSFER_LEARNING"])
+    model = architectures()[args["architecture"]](in_channels=DATA_HYPERPARAMETERS["IN_CHANNELS"], out_classes=DATA_HYPERPARAMETERS["NUM_CLASSES"], pretrained=MODEL_HYPERPARAMETERS["USE_TRANSFER_LEARNING"])
 
+    print(model)
     
     model = model.to(device)
 
@@ -85,7 +82,7 @@ if __name__ == '__main__':
         total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"{total_trainable_params:,} training parameters.")
 
-    optimizer = get_optimizer(optimizer=args["optimizer"], model=model, learning_rate=args['learning_rate'])
+    optimizer = optimizers()[args["optimizer"]](params = model.parameters(), learning_rate=args['learning_rate'])
     criterion = nn.CrossEntropyLoss()
 
     train_images, train_masks, test_images, test_masks = get_images(

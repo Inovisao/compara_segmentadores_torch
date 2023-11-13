@@ -26,9 +26,9 @@ DATA_HYPERPARAMETERS = {
 }
 
 MODEL_HYPERPARAMETERS = {
-    "EPOCHS" : 3,
+    "EPOCHS" : 1,
     "USE_TRANSFER_LEARNING" : True,
-    "PATIENCE" : 30,
+    "PATIENCE" : 50,
     "TOLERANCE" : 0,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
     "USE_LR_SCHEDULER" : False, #Learning Rate se ajusta a cada X épocas

@@ -131,51 +131,39 @@ def save_plots(
     """
     Function to save the loss and accuracy plots to disk.
     """
-    # Accuracy plots.
-    plt.figure(figsize=(10, 7))
-    plt.plot(
-        train_acc, color='tab:blue', linestyle='-', 
-        label='train accuracy'
-    )
-    plt.plot(
-        valid_acc, color='tab:red', linestyle='-', 
-        label='validataion accuracy'
-    )
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.savefig(os.path.join(out_dir_results, 'accuracy.png'))
+    # Define the factor for adjusting the y-axis limits (1.5 in this example).
+    adjustment_factor = 1.5
     
-    # Loss plots.
-    plt.figure(figsize=(10, 7))
-    plt.plot(
-        train_loss, color='tab:blue', linestyle='-', 
-        label='train loss'
-    )
-    plt.plot(
-        valid_loss, color='tab:red', linestyle='-', 
-        label='validataion loss'
-    )
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.savefig(os.path.join(out_dir_results, 'loss.png'))
+    # Loss and Accuracy plots.
+    for plot_type, data, ylabel in [
+        ('accuracy', [train_acc, valid_acc], 'Accuracy'),
+        ('loss', [train_loss, valid_loss], 'Loss'),
+        ('miou', [train_miou, valid_miou], 'mIoU')
+    ]:
+        plt.figure(figsize=(10, 7))
+        for i, dataset in enumerate(['train', 'validation']):
+            plt.plot(
+                data[i], color=f'tab:{"blue" if i == 0 else "red"}', linestyle='-',
+                label=f'{dataset} {plot_type}'
+            )
 
-    # mIOU plots.
-    plt.figure(figsize=(10, 7))
-    plt.plot(
-        train_miou, color='tab:blue', linestyle='-', 
-        label='train mIoU'
-    )
-    plt.plot(
-        valid_miou, color='tab:red', linestyle='-', 
-        label='validataion mIoU'
-    )
-    plt.xlabel('Epochs')
-    plt.ylabel('mIoU')
-    plt.legend()
-    plt.savefig(os.path.join(out_dir_results, 'miou.png'))
+        # Calculate limits based on quantiles and IQR.
+        all_losses = data[0] + data[1]
+        quantiles = np.quantile(all_losses, [0.25, 0.75])
+        iqr = quantiles[1] - quantiles[0]
+        norm_sup = quantiles[1] + (adjustment_factor * iqr)
+        #norm_inf = quantiles[0] - (adjustment_factor * iqr)
+        
+        plt.xlabel('Epochs')
+        plt.ylabel(ylabel)
+        plt.legend()
+        
+        # Set the y-axis limits based on calculated values.
+        plt.ylim(0, norm_sup)
 
+        # Save the plot to a file based on the plot_type.
+        plt.savefig(os.path.join(out_dir_results, f'{plot_type}.png'))
+        
 def get_segment_labels(image, model, device):
     image = image.unsqueeze(0).to(device) # add a batch dimension
     with torch.no_grad():
