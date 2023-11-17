@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sn
 from sklearn import metrics
 import torch
 from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
@@ -114,7 +115,7 @@ def validate(
     overall_acc, per_class_acc, per_class_iu, mIOU = iou_eval.getMetric()
     return valid_loss, overall_acc, mIOU
 
-def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,labels_map):
+def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, labels_map):
     """
     This function tests a model.
     Args:
@@ -176,31 +177,27 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,lab
     # Get the classes for the matrix.
     classes = DATA_HYPERPARAMETERS["CLASSES"]
     
-    #print(classes)
-    #input()
+    # Create Jaccard similarity coefficient score
+    miou = metrics.jaccard_score(y_true=labels, y_pred=predictions, labels=[i for i in range(len(classes))])
     
     # Create the confusion matrix.
     matrix = metrics.confusion_matrix(y_true=labels, y_pred=predictions, labels=[i for i in range(len(classes))])
-
-    # Normaliza a matriz para o intervalo 0 e 1 e arredonda em 2 casas decimais
-    # cada célula
-    matrix_normalizada = np.round(matrix/np.sum(matrix),2)
+    
     # Convert the matrix into a pandas dataframe.
-    df_matrix = pd.DataFrame(matrix_normalizada)
-
+    df_matrix = pd.DataFrame(matrix)
+    
+    
     # Save the matrix as a csv file.
     df_matrix.to_csv(path_to_save_matrix_csv)
-
+    
     # Create a graphical matrix.
     plt.figure()
-    #sn.heatmap(df_matrix, annot=True, yticklabels=classes, xticklabels=classes)
-    cm_plot = metrics.ConfusionMatrixDisplay(confusion_matrix=matrix_normalizada, display_labels=classes)
-    cm_plot.plot()
-    plt.title("Confusion matrix", fontsize=14)
+    sn.heatmap(df_matrix,annot=True,xticklabels=classes,yticklabels=classes,fmt='d')
+    plt.title("Pixels matrix", fontsize=14)
     plt.xlabel("Predicted", fontsize=12)
     plt.ylabel("True", fontsize=12)
     plt.grid(False)
-
+    
     # Save the figure.
     plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
     
@@ -215,4 +212,4 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png,lab
     print(metrics.classification_report(labels, predictions))
 
     # Return the metrics.
-    return precision, recall, fscore
+    return precision, recall, fscore, miou

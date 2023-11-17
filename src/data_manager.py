@@ -86,8 +86,6 @@ class SegmentationDataset(Dataset):
         transformed = self.tfms(image=image, mask=mask)
         image = transformed['image']
         mask = transformed['mask']
-        #plt.imshow(mask)
-        #plt.show()
         # Get colored label mask.
         mask = get_label_mask(mask, self.class_values, self.label_colors_list)
         

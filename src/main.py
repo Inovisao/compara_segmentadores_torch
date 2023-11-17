@@ -195,7 +195,7 @@ if __name__ == '__main__':
     
 
     # Test, save the results and get precision, recall and fscore.
-    precision, recall, fscore = test(dataloader=test_dataloader,
+    precision, recall, fscore, miou = test(dataloader=test_dataloader,
                                     model=model, 
                                     path_to_save_matrix_csv=path_to_matrix_csv, 
                                     path_to_save_matrix_png=path_to_matrix_png,
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     #Create a string with run, learning rate, architecture,
     # optimizer, precision, recall and fscore, to append to the csv file:
     results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "\n"
+        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "," + str(miou) + "\n"
 
     # Open file, write and close.
     f = open("../results_dl/results.csv", "a")
