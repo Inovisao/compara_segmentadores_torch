@@ -193,9 +193,9 @@ if __name__ == '__main__':
     path_to_matrix_csv = "../results/matrix/" + name + "_MATRIX.csv"    
     path_to_matrix_png = "../results/matrix/" + name + "_MATRIX.png"
     
-
+    
     # Test, save the results and get precision, recall and fscore.
-    precision, recall, fscore, miou = test(dataloader=test_dataloader,
+    precision, recall, fscore, miou, class_precision, class_recall, class_fscore = test(dataloader=test_dataloader,
                                     model=model, 
                                     path_to_save_matrix_csv=path_to_matrix_csv, 
                                     path_to_save_matrix_png=path_to_matrix_png,
@@ -205,8 +205,12 @@ if __name__ == '__main__':
     #Create a string with run, learning rate, architecture,
     # optimizer, precision, recall and fscore, to append to the csv file:
     results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "," + str(miou) + "\n"
+        "," + str(args["optimizer"]) + "," + str(-1) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "," + str(miou)# + "," + str(class_precision) + "\n"
 
+    for i in range(len(ALL_CLASSES)):
+        results += str(f"\n{args['run']},{args['learning_rate']},{args['architecture']},{args['optimizer']},{i},{class_precision[i]},{class_recall[i]},{class_fscore[i]},")
+
+    results += "\n"
     # Open file, write and close.
     f = open("../results_dl/results.csv", "a")
     f.write(results)

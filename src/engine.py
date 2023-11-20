@@ -202,14 +202,17 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     plt.savefig(path_to_save_matrix_png, bbox_inches="tight")
     
     # Get some metrics.
-    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, average="macro", zero_division=0)
+    precision, recall, fscore, _ = metrics.precision_recall_fscore_support(labels, predictions,average='macro',zero_division=0)
 
+    # Get some classes metrics
+    class_precision, class_recall, class_fscore, _ = metrics.precision_recall_fscore_support(labels, predictions, zero_division=0)
+    
     # Write some results.
     print(f"Total number of predictions: {len(dataloader.dataset)}.")
     print(f"Number of correct predictions: {test_correct}.")
     print(f"Test accuracy: {(100 * acc):>0.2f}%.\n")
     print('\nPerformance metrics in the test set:')
-    print(metrics.classification_report(labels, predictions))
+    print(metrics.classification_report(labels, predictions, target_names=classes))
 
     # Return the metrics.
-    return precision, recall, fscore, miou
+    return precision, recall, fscore, miou, class_precision, class_recall, class_fscore
