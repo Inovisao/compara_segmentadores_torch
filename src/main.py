@@ -205,10 +205,11 @@ if __name__ == '__main__':
     #Create a string with run, learning rate, architecture,
     # optimizer, precision, recall and fscore, to append to the csv file:
     results = str(args["run"]) + "," + str(args["learning_rate"]) + "," + str(args["architecture"]) + \
-        "," + str(args["optimizer"]) + "," + str(-1) + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "," + str(miou)# + "," + str(class_precision) + "\n"
+        "," + str(args["optimizer"]) + "," + str("média") + "," + str(precision) + "," + str(recall) + "," + str(fscore) + "," + str(miou)
 
     for i in range(len(ALL_CLASSES)):
-        results += str(f"\n{args['run']},{args['learning_rate']},{args['architecture']},{args['optimizer']},{i},{class_precision[i]},{class_recall[i]},{class_fscore[i]},")
+        class_name = ALL_CLASSES[i]
+        results += str(f"\n{args['run']},{args['learning_rate']},{args['architecture']},{args['optimizer']},{class_name},{class_precision[i]},{class_recall[i]},{class_fscore[i]},")
 
     results += "\n"
     # Open file, write and close.
