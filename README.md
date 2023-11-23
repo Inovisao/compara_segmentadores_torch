@@ -8,7 +8,8 @@
 
 ## Organizando os dados:
     - Coloque as imagens dentro de data/all/imagens e as labels em data/labels (ambos em formato png)
-    - Rode o script split.sh presente na pasta utils para separar as imagens por dobras
+    - Rode o script split.sh presente na pasta utils para separar as imagens por dobras. Lembre-se de passar número de dobras 
+    como parâmetro. ex.: split.sh -k 10  ### Criando 10 dobras.
 
 ## Preparando o ambiente:
     - Abra o terminal e rode essa linha: conda create -n segmentacao
