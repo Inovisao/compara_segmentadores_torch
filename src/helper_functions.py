@@ -7,7 +7,7 @@ import json
 import matplotlib.pyplot as plt
 from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
 from PIL import Image
-
+from args import get_args
 from config import load_class_data
 plt.style.use('ggplot')
 
@@ -21,7 +21,7 @@ def set_class_values(all_classes, classes_to_train):
     :param all_classes: Lista contendo todas as classes.
     :param classes_to_train: Lista contendo os nomes das classes a serem treinadas.
     """
-    class_values = [all_classes.index(cls.lower()) for cls in classes_to_train]
+    class_values = [all_classes.index(cls) for cls in classes_to_train]
     return class_values
 
 def get_label_mask(mask, class_values, label_colors_list):
@@ -163,6 +163,7 @@ def save_plots(
 
         # Save the plot to a file based on the plot_type.
         plt.savefig(os.path.join(out_dir_results, f'{plot_type}.png'))
+        plt.close()
         
 def get_segment_labels(image, model, device):
     image = image.unsqueeze(0).to(device) # add a batch dimension
@@ -247,8 +248,15 @@ def plot_segmentation(prediction, filename, figure):
     
     img_size = DATA_HYPERPARAMETERS["IMAGE_SIZE"]
     
+    args = get_args()
+    fold_name = (f"{args['architecture']}_{args['optimizer']}_{args['learning_rate']}")
+    
     if not os.path.exists("../results_dl/predictions"):
         os.mkdir("../results_dl/predictions")
+    
+    
+    if not os.path.exists(f"../results_dl/predictions/{fold_name}"):
+        os.mkdir(f"../results_dl/predictions/{fold_name}")
 
     for k, pred in enumerate(prediction):
         print("Plotando teste da imagem:", filename[k])
@@ -274,8 +282,8 @@ def plot_segmentation(prediction, filename, figure):
         
         plt.axis('off')
         ax.grid(False)
-        
-        figure.savefig(f"../results_dl/predictions/{filename[k]}.png", dpi=300, bbox_inches="tight")
+        img_filename = (f'{args["run"]}_{filename[k]}.png')
+        figure.savefig(f"../results_dl/predictions/{fold_name}/{img_filename}", dpi=300, bbox_inches="tight")
         
         figure.clf()
         

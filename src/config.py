@@ -110,7 +110,7 @@ def update_classes_from_json(file_path):
             else:
                 # Generate color and rescale it to [0, 255]
                 if category_id not in supercategory_color_map:
-                    color = tuple(int(x * 255) for x in generate_unique_colors(1)[0])
+                    color = tuple(int(x * 255) for x in generate_unique_colors(255)[0])
 
             # Assign color to class
             supercategory_color_map[category_id] = color
