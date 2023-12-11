@@ -1,0 +1,6 @@
+install.packages("ggplot2")
+install.packages("gridExtra")
+install.packages("Metrics")
+install.packages("ExpDes.pt")
+install.packages("kableExtra")
+install.packages(data.table)

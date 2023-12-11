@@ -1,15 +1,17 @@
 import numpy as np
 import cv2
 import torch
+from torchvision.transforms import functional
 import os
+import json
 import matplotlib.pyplot as plt
-from data_hyperparameters import MODEL_HYPERPARAMETERS
-from torchvision import transforms
-from config import (
-    VIS_LABEL_MAP as viz_map
-)
-
+from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
+from PIL import Image
+from args import get_args
+from config import load_class_data
 plt.style.use('ggplot')
+
+viz_map = load_class_data()["VIS_LABEL_MAP"]
 
 def set_class_values(all_classes, classes_to_train):
     """
@@ -19,7 +21,7 @@ def set_class_values(all_classes, classes_to_train):
     :param all_classes: Lista contendo todas as classes.
     :param classes_to_train: Lista contendo os nomes das classes a serem treinadas.
     """
-    class_values = [all_classes.index(cls.lower()) for cls in classes_to_train]
+    class_values = [all_classes.index(cls) for cls in classes_to_train]
     return class_values
 
 def get_label_mask(mask, class_values, label_colors_list):
@@ -30,14 +32,17 @@ def get_label_mask(mask, class_values, label_colors_list):
     :param class_values: Lista contendo o valor da classe, ex.: car=0, bus=1.
     :param label_colors_list: Lista contendo o valor RGB de cada classe.
     """
+    
     label_mask = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
-    for value in class_values:
-        for ii, label in enumerate(label_colors_list):
-            if value == label_colors_list.index(label):
-                label = np.array(label)
-                label_mask[np.where(np.all(mask == label, axis=-1))[:2]] = value
-    label_mask = label_mask.astype(int)
+    
+    for class_id, color in zip(class_values, label_colors_list):
+        boolean_mask = np.all((mask[:, :, :] == color), axis=-1)
+        label_mask[boolean_mask] = class_id
+        
+    
     return label_mask
+    
+    
 
 def draw_translucent_seg_maps(
     data, 
@@ -61,10 +66,6 @@ def draw_translucent_seg_maps(
     image = data[0]
     image = np.array(image.cpu())
     image = np.transpose(image, (1, 2, 0))
-    # unnormalize the image (important step)
-    # mean = np.array([0.5, 0.5, 0.5])
-    # std = np.array([0.5, 0.5, 0.5])
-    # image = std * image + mean
     image = np.array(image, dtype=np.float32)
     image = image * 255
 
@@ -101,7 +102,7 @@ class SaveBestModel:
     def __init__(self, best_valid_loss=float('inf'), ):
         self.best_valid_loss = best_valid_loss
         
-    def __call__(self, current_valid_loss, epoch, model, out_dir, name='model'):
+    def __call__(self, current_valid_loss, epoch, model, out_dir, name):
         bk = False
         if current_valid_loss < (self.best_valid_loss-self.TOLERANCE):
             self.best_valid_loss = current_valid_loss
@@ -110,7 +111,7 @@ class SaveBestModel:
             torch.save({
                 'epoch': epoch+1,
                 'model_state_dict': model.state_dict(),
-                }, os.path.join(out_dir, 'best_'+name+'.pth'))
+                }, os.path.join(out_dir, name+'.pth'))
             self.NoImprovement = 0
         else:
             self.NoImprovement += 1
@@ -121,36 +122,6 @@ class SaveBestModel:
         
         return bk
 
-class SaveBestModelIOU:
-    """
-    Class to save the best model while training. If the current epoch's 
-    IoU is higher than the previous highest, then save the
-    model state.
-    """
-    def __init__(self, best_iou=float(0)):
-        self.best_iou = best_iou
-        
-    def __call__(self, current_iou, epoch, model, out_dir_checkpoints, name='model'):
-        if current_iou > self.best_iou:
-            self.best_iou = current_iou
-            print(f"\nBest validation IoU: {self.best_iou}")
-            print(f"\nSaving best model for epoch: {epoch+1}\n")
-            torch.save({
-                'epoch': epoch+1,
-                'model_state_dict': model.state_dict(),
-                }, os.path.join(out_dir_checkpoints, 'best_'+name+'.pth'))
-
-def save_model(epochs, model, optimizer, criterion, out_dir_checkpoints, name='model'):
-    """
-    Function to save the trained model to disk.
-    """
-    torch.save({
-                'epoch': epochs,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': criterion,
-                }, os.path.join(out_dir_checkpoints, name+'.pth'))
-
 def save_plots(
     train_acc, valid_acc, 
     train_loss, valid_loss, 
@@ -160,51 +131,40 @@ def save_plots(
     """
     Function to save the loss and accuracy plots to disk.
     """
-    # Accuracy plots.
-    plt.figure(figsize=(10, 7))
-    plt.plot(
-        train_acc, color='tab:blue', linestyle='-', 
-        label='train accuracy'
-    )
-    plt.plot(
-        valid_acc, color='tab:red', linestyle='-', 
-        label='validataion accuracy'
-    )
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.savefig(os.path.join(out_dir_results, 'accuracy.png'))
+    # Define the factor for adjusting the y-axis limits (1.5 in this example).
+    adjustment_factor = 1.5
     
-    # Loss plots.
-    plt.figure(figsize=(10, 7))
-    plt.plot(
-        train_loss, color='tab:blue', linestyle='-', 
-        label='train loss'
-    )
-    plt.plot(
-        valid_loss, color='tab:red', linestyle='-', 
-        label='validataion loss'
-    )
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.savefig(os.path.join(out_dir_results, 'loss.png'))
+    # Loss and Accuracy plots.
+    for plot_type, data, ylabel in [
+        ('accuracy', [train_acc, valid_acc], 'Accuracy'),
+        ('loss', [train_loss, valid_loss], 'Loss'),
+        ('miou', [train_miou, valid_miou], 'mIoU')
+    ]:
+        plt.figure(figsize=(10, 7))
+        for i, dataset in enumerate(['train', 'validation']):
+            plt.plot(
+                data[i], color=f'tab:{"blue" if i == 0 else "red"}', linestyle='-',
+                label=f'{dataset} {plot_type}'
+            )
 
-    # mIOU plots.
-    plt.figure(figsize=(10, 7))
-    plt.plot(
-        train_miou, color='tab:blue', linestyle='-', 
-        label='train mIoU'
-    )
-    plt.plot(
-        valid_miou, color='tab:red', linestyle='-', 
-        label='validataion mIoU'
-    )
-    plt.xlabel('Epochs')
-    plt.ylabel('mIoU')
-    plt.legend()
-    plt.savefig(os.path.join(out_dir_results, 'miou.png'))
+        # Calculate limits based on quantiles and IQR.
+        all_losses = data[0] + data[1]
+        quantiles = np.quantile(all_losses, [0.25, 0.75])
+        iqr = quantiles[1] - quantiles[0]
+        norm_sup = quantiles[1] + (adjustment_factor * iqr)
+        #norm_inf = quantiles[0] - (adjustment_factor * iqr)
+        
+        plt.xlabel('Epochs')
+        plt.ylabel(ylabel)
+        plt.legend()
+        
+        # Set the y-axis limits based on calculated values.
+        plt.ylim(0, norm_sup)
 
+        # Save the plot to a file based on the plot_type.
+        plt.savefig(os.path.join(out_dir_results, f'{plot_type}.png'))
+        plt.close()
+        
 def get_segment_labels(image, model, device):
     image = image.unsqueeze(0).to(device) # add a batch dimension
     with torch.no_grad():
@@ -280,3 +240,84 @@ def save_validation_images(data, outputs, epoch, i, save_dir, label_colors_list)
         cv2.imwrite(image_path, overlaid_image)
 
         print(f"Imagem salva em: {image_path}")
+        
+        
+def plot_segmentation(prediction, filename, figure):
+    
+    color_map = DATA_HYPERPARAMETERS["LABEL_COLORS_LIST"]
+    
+    img_size = DATA_HYPERPARAMETERS["IMAGE_SIZE"]
+    
+    args = get_args()
+    fold_name = (f"{args['architecture']}_{args['optimizer']}_{args['learning_rate']}")
+    
+    if not os.path.exists("../results_dl/masks"):
+        os.mkdir("../results_dl/masks")
+    
+    if not os.path.exists(f"../results_dl/masks/{fold_name}"):
+        os.mkdir(f"../results_dl/masks/{fold_name}")
+    
+    if not os.path.exists("../results_dl/predictions"):
+        os.mkdir("../results_dl/predictions")
+    
+    
+    if not os.path.exists(f"../results_dl/predictions/{fold_name}"):
+        os.mkdir(f"../results_dl/predictions/{fold_name}")
+    
+    for l, pred in enumerate(prediction):
+        print("Plotando máscara da imagem: ", filename[l])
+        
+        original_image_path = os.path.join("../data/all/imagens", filename[l]+'.jpg')
+        original_image = Image.open(original_image_path)
+        
+        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="int8")
+        for i in range(img_size):
+            for j in range(img_size):
+                plot[i,j,:] = color_map[pred[i, j]]
+                
+        ax = figure.add_subplot()
+        
+        ax.set_title(filename[l])
+        
+        plot = Image.fromarray(plot, mode="RGB")
+        plot = plot.resize(size=(original_image.width, original_image.height))
+        
+        ax.imshow(plot)
+        
+        plt.axis('off')
+        ax.grid(False)
+        mask_filename = (f'{args["run"]}_mask_{filename[l]}.png')
+        figure.savefig(f"../results_dl/masks/{fold_name}/{mask_filename}", dpi=300, bbox_inches="tight")
+        
+        figure.clf()
+
+    for k, pred in enumerate(prediction):
+        print("Plotando teste da imagem:", filename[k])
+        
+        # Carregue a imagem original
+        original_image_path = os.path.join("../data/all/imagens", filename[k]+'.jpg')
+        original_image = Image.open(original_image_path)
+        
+        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="int8")
+        for i in range(img_size):
+            for j in range(img_size):
+                plot[i, j, :] = color_map[pred[i, j]]
+        
+        ax = figure.add_subplot()
+        
+        ax.set_title(filename[k])
+        
+        plot = Image.fromarray(plot, mode="RGB")
+        plot = plot.resize(size=(original_image.width, original_image.height))
+        
+        ax.imshow(plot, alpha=0.5)
+        ax.imshow(original_image, alpha=0.5)
+        
+        plt.axis('off')
+        ax.grid(False)
+        img_filename = (f'{args["run"]}_{filename[k]}.png')
+        figure.savefig(f"../results_dl/predictions/{fold_name}/{img_filename}", dpi=300, bbox_inches="tight")
+        
+        figure.clf()
+        
+    

@@ -33,6 +33,8 @@ subset=0
 # rapidamente um exemplo.
 ndobras=3
 
+python ../src/config.py
+
 # Get the flags
 while getopts "k:s|S|h|H" flag; 
 do
