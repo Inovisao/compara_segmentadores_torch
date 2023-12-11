@@ -34,7 +34,7 @@ rm -rf ../results_dl/*
 mkdir -p ../model_checkpoints/
 #rm -rf ../model_checkpoints/*
 
-echo  'fold,run,architecture,optimizer,classe,precision,recall,fscore,miou' > ../results_dl/results.csv
+echo  'fold,learning_rate,architecture,optimizer,classe,precision,recall,fscore,miou' > ../results_dl/results.csv
 
 mkdir -p ${pastaResultados}
 mkdir -p ${pastaTreino} 

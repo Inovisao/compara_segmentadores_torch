@@ -251,12 +251,45 @@ def plot_segmentation(prediction, filename, figure):
     args = get_args()
     fold_name = (f"{args['architecture']}_{args['optimizer']}_{args['learning_rate']}")
     
+    if not os.path.exists("../results_dl/masks"):
+        os.mkdir("../results_dl/masks")
+    
+    if not os.path.exists(f"../results_dl/masks/{fold_name}"):
+        os.mkdir(f"../results_dl/masks/{fold_name}")
+    
     if not os.path.exists("../results_dl/predictions"):
         os.mkdir("../results_dl/predictions")
     
     
     if not os.path.exists(f"../results_dl/predictions/{fold_name}"):
         os.mkdir(f"../results_dl/predictions/{fold_name}")
+    
+    for l, pred in enumerate(prediction):
+        print("Plotando máscara da imagem: ", filename[l])
+        
+        original_image_path = os.path.join("../data/all/imagens", filename[l]+'.jpg')
+        original_image = Image.open(original_image_path)
+        
+        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="int8")
+        for i in range(img_size):
+            for j in range(img_size):
+                plot[i,j,:] = color_map[pred[i, j]]
+                
+        ax = figure.add_subplot()
+        
+        ax.set_title(filename[l])
+        
+        plot = Image.fromarray(plot, mode="RGB")
+        plot = plot.resize(size=(original_image.width, original_image.height))
+        
+        ax.imshow(plot)
+        
+        plt.axis('off')
+        ax.grid(False)
+        mask_filename = (f'{args["run"]}_mask_{filename[l]}.png')
+        figure.savefig(f"../results_dl/masks/{fold_name}/{mask_filename}", dpi=300, bbox_inches="tight")
+        
+        figure.clf()
 
     for k, pred in enumerate(prediction):
         print("Plotando teste da imagem:", filename[k])
