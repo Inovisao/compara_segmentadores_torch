@@ -9,3 +9,5 @@ results_dl/
 data
 model_checkpoints
 outputs/
+.vscode/
+checkpoint
