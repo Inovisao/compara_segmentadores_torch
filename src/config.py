@@ -21,7 +21,7 @@ def move_anns():
     if os.path.exists(anns_file):
         if (not os.path.exists(coco_annotations_dir)):
             os.mkdir(coco_annotations_dir)        
-        print("dor e sofrimento") 
+        #print("dor e sofrimento") 
         os.rename(anns_file, os.path.join(coco_annotations_dir, "_annotations.coco.json"))
 
 
@@ -119,8 +119,6 @@ def update_classes_from_json(file_path):
 
     return all_classes, supercategory_color_map
 
-
-
 if __name__ == "__main__":
     # Caminho para o arquivo JSON
     move_anns()
@@ -137,7 +135,7 @@ if __name__ == "__main__":
     print("Gerando máscaras...")
     coco2binary(supercategory_color_map)
     print("Feito!")
-
+    
     new_data = {"ALL_CLASSES": ALL_CLASSES,
                 "supercategory_color_map": supercategory_color_map,
                 "LABEL_COLORS_LIST": LABEL_COLORS_LIST,

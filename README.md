@@ -2,7 +2,7 @@
 
 ## Organizando os dados e rodando experimento:
     - Coloque as imagens separadas em uma pasta por classe dentro de ./data/all. Certifique-se de que os nomes dos arquivos não contêm espaços.
-    - Rode o script splitFolds.sh, passando o número de dobras como argumento -k (ex.: ./splitFolds.sh -k 10). Frequentemente se utilizam dez dobras.
+    - Rode o script split.sh, passando o número de dobras como argumento -k (ex.: ./split.sh -k 10). Frequentemente se utilizam dez dobras.
     - Selecione as redes (arquiteturas e otimizadores) a serem testadas em roda.sh.
     - Altere os hiperparâmetros em hyperparameters.py.
     - Se necessário, altere os hiperparâmetros dos otimizadores diretamente em optimizers.py.

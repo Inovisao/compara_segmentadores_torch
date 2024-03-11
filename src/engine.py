@@ -10,6 +10,7 @@ from helper_functions import draw_translucent_seg_maps, plot_segmentation
 from metrics import IOUEval
 import sys
 import numpy as np
+from segformer import Segformer
 
 device = MODEL_HYPERPARAMETERS["DEVICE"]
 #test
@@ -34,7 +35,10 @@ def train(
         optimizer.zero_grad()
         if data.shape[0] == 1:
             continue
-        outputs = model(data)['out']
+        #if model não for segformer 
+        if not isinstance(model, Segformer):
+            outputs = model(data)['out']
+        else: outputs = model(data)
         
         ##### BATCH-WISE LOSS #####
         loss = criterion(outputs, target)
@@ -64,6 +68,7 @@ def train(
     overall_acc, per_class_acc, per_class_iu, mIOU = iou_eval.getMetric()
     return train_loss, overall_acc, mIOU
 
+
 def validate(
     model,
     valid_dataloader,
@@ -88,8 +93,10 @@ def validate(
         for i, data in enumerate(valid_dataloader):
             counter += 1
             data, target = data[0].to(device), data[1].to(device)
-            outputs = model(data)['out']
             
+            if not isinstance(model, Segformer):
+                outputs = model(data)['out']
+            else: outputs = model(data)
             # Save the validation segmentation maps every
             # last batch of each epoch
             if i == num_batches - 1:
@@ -140,7 +147,7 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
     # Initialize the number of correct predictions with value 0.
     test_correct = 0
     
-    plot = plt.figure(num=1)
+    #plot = plt.figure(num=1)
     
     #Proceed without calculating the gradients.
     with torch.no_grad():
@@ -150,14 +157,16 @@ def test(dataloader, model, path_to_save_matrix_csv, path_to_save_matrix_png, la
             img, label = img.to(device, dtype=torch.float), label.to(device)
 
             # Make predictions with the model.
-            prediction = dict(model(img))["out"]
-        
+            if not isinstance(model, Segformer):
+                prediction = dict(model(img))["out"]
+                # Get the index of the prediction with the highest probability.
+                prediction = prediction.argmax(1)
+            else: 
+                prediction = model(img)
+                prediction = prediction.argmax(dim=1)
             #prediction_prob_values = softmax(prediction)
-    
-            # Get the index of the prediction with the highest probability.
-            prediction = prediction.argmax(1)
             
-            plot_segmentation(prediction.cpu(), filename, plot)
+            plot_segmentation(prediction.cpu(), filename)
             
             # Append predictions and labels to the lists initialized earlier.
             # Also, send both predictions and labels to the cpu.
