@@ -1,12 +1,9 @@
 import numpy as np
 import cv2
 import torch
-from torchvision.transforms import functional
 import os
-import json
 import matplotlib.pyplot as plt
 from data_hyperparameters import MODEL_HYPERPARAMETERS, DATA_HYPERPARAMETERS
-from PIL import Image
 from args import get_args
 from config import load_class_data
 plt.style.use('ggplot')
@@ -242,7 +239,7 @@ def save_validation_images(data, outputs, epoch, i, save_dir, label_colors_list)
         print(f"Imagem salva em: {image_path}")
         
         
-def plot_segmentation(prediction, filename, figure):
+def plot_segmentation(prediction, filename):
     
     color_map = DATA_HYPERPARAMETERS["LABEL_COLORS_LIST"]
     
@@ -268,56 +265,40 @@ def plot_segmentation(prediction, filename, figure):
         print("Plotando máscara da imagem: ", filename[l])
         
         original_image_path = os.path.join("../data/all/imagens", filename[l]+'.jpg')
-        original_image = Image.open(original_image_path)
+        original_image = cv2.imread(original_image_path)
         
-        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="int8")
+        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="uint8")
         for i in range(img_size):
             for j in range(img_size):
-                plot[i,j,:] = color_map[pred[i, j]]
+                plot[i,j,:] = color_map[pred[i, j].to(int)]
                 
-        ax = figure.add_subplot()
+        plot = cv2.resize(plot, (original_image.shape[1], original_image.shape[0]))
         
-        ax.set_title(filename[l])
-        
-        plot = Image.fromarray(plot, mode="RGB")
-        plot = plot.resize(size=(original_image.width, original_image.height))
-        
-        ax.imshow(plot)
-        
-        plt.axis('off')
-        ax.grid(False)
         mask_filename = (f'{args["run"]}_mask_{filename[l]}.png')
-        figure.savefig(f"../results_dl/masks/{fold_name}/{mask_filename}", dpi=300, bbox_inches="tight")
+        mask_path = os.path.join("../results_dl/masks/", fold_name, mask_filename)
+        cv2.imwrite(mask_path, plot)
+        print(f"Máscara salva em: {mask_path}")
         
-        figure.clf()
+        
 
     for k, pred in enumerate(prediction):
         print("Plotando teste da imagem:", filename[k])
         
         # Carregue a imagem original
         original_image_path = os.path.join("../data/all/imagens", filename[k]+'.jpg')
-        original_image = Image.open(original_image_path)
+        original_image = cv2.imread(original_image_path)
         
-        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="int8")
+        plot = np.zeros(shape=(img_size, img_size, DATA_HYPERPARAMETERS["IN_CHANNELS"]), dtype="uint8")
         for i in range(img_size):
             for j in range(img_size):
-                plot[i, j, :] = color_map[pred[i, j]]
+                plot[i, j, :] = color_map[pred[i, j].to(int)]
         
-        ax = figure.add_subplot()
+        plot = cv2.resize(plot, (original_image.shape[1], original_image.shape[0]))
         
-        ax.set_title(filename[k])
+        alpha = 0.5
+        overlaid_image = cv2.addWeighted(original_image, 1 - alpha, plot, alpha, 0)
         
-        plot = Image.fromarray(plot, mode="RGB")
-        plot = plot.resize(size=(original_image.width, original_image.height))
-        
-        ax.imshow(plot, alpha=0.5)
-        ax.imshow(original_image, alpha=0.5)
-        
-        plt.axis('off')
-        ax.grid(False)
-        img_filename = (f'{args["run"]}_{filename[k]}.png')
-        figure.savefig(f"../results_dl/predictions/{fold_name}/{img_filename}", dpi=300, bbox_inches="tight")
-        
-        figure.clf()
-        
-    
+        img_filename = f'{args["run"]}_{filename[k]}.png'
+        img_path = os.path.join("../results_dl/predictions", fold_name, img_filename)
+        cv2.imwrite(img_path, overlaid_image)
+        print(f"Imagem salva em: {img_path}")

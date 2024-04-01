@@ -6,7 +6,7 @@
 export CUDA_VISIBLE_DEVICES=0
 
 # IMPORTANTE: 3 dobras é muito pouco. Usei apenas para rodar mais apidamente um exemplo.
-ndobras=10
+ndobras=3
 
 # Verifica se o usuário passou como parâmetro
 # o número de dobras (E.g.: ./rodaCruzada.sh -k 5)
@@ -32,7 +32,7 @@ mkdir -p ../results_dl/
 rm -rf ../results_dl/*
 
 mkdir -p ../model_checkpoints/
-#rm -rf ../model_checkpoints/*
+rm -rf ../model_checkpoints/*
 
 echo  'fold,learning_rate,architecture,optimizer,classe,precision,recall,fscore,miou' > ../results_dl/results.csv
 
