@@ -22,7 +22,7 @@ DATA_HYPERPARAMETERS = {
     "TRAIN_DATA_DIR": TRAIN_DATA_DIR,
     "TEST_DATA_DIR": TEST_DATA_DIR,
     #"USE_DATA_AUGMENTATION": True,
-    "APENAS_TESTA" : True
+    "APENAS_TESTA" : False
 }
 
 MODEL_HYPERPARAMETERS = {
@@ -32,7 +32,7 @@ MODEL_HYPERPARAMETERS = {
     "TOLERANCE" : 0,
     "DEVICE": "cuda" if torch.cuda.is_available() else "cpu",
     "USE_LR_SCHEDULER" : False, #Learning Rate se ajusta a cada X épocas
-    "LR_SCHEDULER" : 60 #epocas para ajuste do scheduler
+    "LR_SCHEDULER" : 50 #epocas para ajuste do scheduler
 }
 
 DATA_AUGMENTATION = {

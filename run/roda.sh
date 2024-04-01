@@ -1,6 +1,7 @@
 # CLASSIFICADORES QUE VOCÊ QUER TESTAR
 #arqs=(deeplabv3_resnet101 | deeplabv3_resnet50 | fcn_resnet50)
-arqs=(deeplabv3_resnet101 fcn_resnet50)
+#arqs=(deeplabv3_resnet101)
+arqs=(deeplabv3_resnet101 fcn_resnet50 segformer)
 
 mkdir -p ../results
 rm -rf ../results/*
@@ -11,7 +12,7 @@ mkdir -p ../results/history
 opt=(adam sgd adagrad)
 
 # LEARNING RATES
-learning_rates=(0.001)
+learning_rates=(0.01 0.001 0.0001)
 
 cd ../src
 for lr in "${learning_rates[@]}"

@@ -1,28 +1,20 @@
-##  Código baseado no tutorial do Sovit Ranjan Rath com algumas alterações (https://debuggercafe.com/multi-class-semantic-segmentation-training-using-pytorch#download-code)
-
-## Organizando os dados e rodando experimento:
-    - Coloque as imagens separadas em uma pasta por classe dentro de ./data/all. Certifique-se de que os nomes dos arquivos não contêm espaços.
-    - Rode o script splitFolds.sh, passando o número de dobras como argumento -k (ex.: ./splitFolds.sh -k 10). Frequentemente se utilizam dez dobras.
-    - Selecione as redes (arquiteturas e otimizadores) a serem testadas em roda.sh.
-    - Altere os hiperparâmetros em hyperparameters.py.
-    - Se necessário, altere os hiperparâmetros dos otimizadores diretamente em optimizers.py.
-    - Rode o script rodaCruzada.sh, passando o número de dobras como argumento -k (ex.: ./rodaCruzada.sh -k 10).
-
+## Compara_segmentadores_torch
+- Código baseado no tutorial do Sovit Ranjan Rath(https://debuggercafe.com/multi-class-semantic-segmentation-training-using-pytorch#download-code) com algumas alterações feitas para atender a demanda do grupo.
 
 ## Preparando o ambiente:
-    - Abra o terminal e rode essa linha: conda create -n segmentacao
-    - Logo após, rode essa linha: conda activate segmentacao
-    - Rode o script env.sh dentro de utils para preparar o ambiente com as bibliotecas
+- Primeiro instale todas as dependências necessárias para o funcionamento do código, para isso rode o script env.sh dentro do diretório utils/.
 
+## Rodando
+- Após obter as imagens e o arquivo COCO JSON (Roboflow), você deve salvar esses arquivos em data/all/imagens (o dataset baixado do roboflow vem com uma pasta train por padrão, tem que renomear para imagens).Certifique-se de que os nomes dos arquivos não contêm espaços.
+- Rode o script split.sh que se encontra dentro do diretório utils/, passando o número de dobras como argumento -k (ex.: ./splitFolds.sh -k 10). Por padrão 3 dobras são geradas pelo script, adapte conforme a necessidade.
+- Escolha as arquiteturas, otimizadores e a taxa de aprendizagem em roda.sh
+- Defina os hiperparâmetros modificando o arquivo python em src/data_hyperparameters.py
+- Rode o script rodaCruzada que se encontra dentro do diretório run/, você deve utilizar a mesma quantidade de dobras que foi definida para o split(ex.: bash rodaCruzada.sh -k 10), por padrão está definido com 3 dobras, ajuste conforme a necessidade.
 
-## Adicionando mais arquiteturas.
-
-- Para adicionar uma nova arquitetura, defina uma função em architectures.py. Instancie a arquitetura e programe a alteração da primeira e da última camadas. Registre a nova arquitetura no dicionário que consta em arch_optim.py.
-- Para adicionar um novo otimizador, defina uma função em optimizers.py. Os hiperparâmetros do otimizador devem estar declarados explicitamente, mesmo que o valor atribuído seja o valor padrão.
 
 ## Informações adicionais.
 
-- Os resultados relativos à dobra em execução são colocados na pasta ./results. Os resultados por dobra são colocados na pasta ./resultsNfolds após a execução completa da dobra.
+- Os resultados principais(csv,previsões,máscaras) bem como os gráficos gerados pelo R são colocados na pasta ./results_dl. Os resultados por dobra são colocados na pasta ./resultsNfolds após a execução completa da dobra.
 
 ## Troubleshooting.
 

@@ -7,67 +7,82 @@ library(data.table)
 #
 #   BOXPLOT DO DESEMPENHO ENTRE MÉTRICAS
 #
-dados <- read.table('../results_dl/results.csv',sep=',',header=TRUE)
 
+# Carregar os dados do arquivo CSV
+dados <- read.table('../results_dl/results.csv', sep = ',', header = TRUE)
+
+# Classes a serem consideradas na análise de variância
 desconsiderar_na_anova <- c("média", "fundo")
 
+# Métricas a serem plotadas
+metricas <- c("precision", "recall", "fscore", "miou")
 
-metricas <- c("precision","recall","fscore","miou")
+# Classes únicas presentes nos dados
 classes <- unique(dados$classe)
 
+# Learning rates únicos
+varia_lr <- unique(dados$learning_rate)
 
-for (classe in classes) {
-    graficos <- list()
-    i <- 1
-    for (metrica in metricas) {
-        
-        print(metrica)
+for (lr in varia_lr) {
+  dados_uma_lr <- dados[dados$learning_rate == lr,]
+  
+  # Cria a pasta para cada learning rate
+  pasta_lr <- sprintf("../results_dl/learning_rate_%s", lr)
+  if (!dir.exists(pasta_lr)) {
+    dir.create(pasta_lr)
+  }
+  
+  for (classe in classes) {
+      graficos <- list()
+      i <- 1
+      for (metrica in metricas) {
+          
+          print(metrica)
 
-        dados_classe <- dados[dados$classe == classe, ]
+          dados_classe <- dados_uma_lr[dados_uma_lr$classe == classe, ]
 
-        if (any(!is.na(dados_classe[[metrica]]))) {    
-            TITULO = sprintf("Boxplot for %s",metrica)
-            g <- ggplot(dados_classe, aes_string(x="architecture", y = metrica, fill="optimizer"))+
-            geom_boxplot()+
-            scale_fill_brewer(palette="Purples")+
-            labs(title=TITULO, x="Models", y = metrica)+
-            theme(legend.position="right")+
-            theme(plot.title = element_text(hjust = 0.5))
+          if (any(!is.na(dados_classe[[metrica]]))) {    
+              TITULO = sprintf("Boxplot for %s",metrica)
+              g <- ggplot(dados_classe, aes_string(x="architecture", y = metrica, fill="optimizer"))+
+              geom_boxplot()+
+              scale_fill_brewer(palette="Purples")+
+              labs(title=TITULO, x="Models", y = metrica)+
+              theme(legend.position="right")+
+              theme(plot.title = element_text(hjust = 0.5))
 
-            graficos[[i]] <- g
-            i = i + 1
-            }
-    }
+              graficos[[i]] <- g
+              i = i + 1
+              }
+      }
 
-    if (length(graficos) > 0) { 
-        g <- grid.arrange(grobs=graficos, ncol = 2)
-        ggsave(paste(sprintf("../results_dl/boxplot_%s.png",classe), sep=""),g, width = 12, height = 10)
-        print(g)
-    }
-    
+      if (length(graficos) > 0) { 
+          g <- grid.arrange(grobs=graficos, ncol = 2)
+          ggsave(paste(sprintf("../results_dl/learning_rate_%s/boxplot_%s.png", lr, classe), sep=""),g, width = 12, height = 10)
+          print(g)
+      }
+      
+  }
 }
 
-#
-#
-#
-possible_factors <- list("learning_rate","architecture","optimizer")
+
+# Fatores a serem considerados na análise de variância
+possible_factors <- list("learning_rate", "architecture", "optimizer")
 factors <- list()
 i <- 1
-for (possible_factor in possible_factors){
-    if(length(unique(dados[,possible_factor])) > 1){
-        factors[i] <- possible_factor
-        i <- i + 1
-    }
-
+for (possible_factor in possible_factors) {
+  if (length(unique(dados[, possible_factor])) > 1) {
+    factors[i] <- possible_factor
+    i <- i + 1
+  }
 }
 
-
+# Classes a serem consideradas na análise de variância
 all_clases <- unique(dados[, "classe"])
 classes_anova <- list()
 for (c in all_clases) {
-    if (!c %in% desconsiderar_na_anova) {
-      classes_anova <- append(classes_anova, c)
-    }
+  if (!c %in% desconsiderar_na_anova) {
+    classes_anova <- append(classes_anova, c)
+  }
 }
 
 one_way_anova <- function(dataframe, factor) {
@@ -208,4 +223,3 @@ cat(kbl(fscore_statistics, caption="Statistics for fscore",
       align="r"))
 
 sink()
-
