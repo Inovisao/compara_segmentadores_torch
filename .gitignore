@@ -11,3 +11,9 @@ model_checkpoints
 outputs/
 .vscode/
 checkpoint
+data_1024_UCDB_UPS/
+data_512_UCDB_UPS/
+Evaluation_from_checkpoints/
+data_test/
+checkpoints_from_other_computer/
+evaluation_results.csv

@@ -6,23 +6,28 @@ import json
 from PIL import Image
 from pycocotools.coco import COCO
 
+
 def load_class_data():
-    filename = os.path.join("..", "data", "annotations_coco_json", "class_data.json")
-    
+    filename = os.path.join(
+        "..", "data", "annotations_coco_json", "class_data.json")
+
     with open(filename, 'r') as f:
         class_data = json.load(f)
-    
+
     return class_data
 
+
 def move_anns():
-    anns_file = os.path.join("..", "data", "all", "imagens", "_annotations.coco.json") 
-    coco_annotations_dir = os.path.join("..", "data", "annotations_coco_json") 
+    anns_file = os.path.join(
+        "..", "data", "all", "imagens", "_annotations.coco.json")
+    coco_annotations_dir = os.path.join("..", "data", "annotations_coco_json")
 
     if os.path.exists(anns_file):
         if (not os.path.exists(coco_annotations_dir)):
-            os.mkdir(coco_annotations_dir)        
-        #print("dor e sofrimento") 
-        os.rename(anns_file, os.path.join(coco_annotations_dir, "_annotations.coco.json"))
+            os.mkdir(coco_annotations_dir)
+        # print("dor e sofrimento")
+        os.rename(anns_file, os.path.join(
+            coco_annotations_dir, "_annotations.coco.json"))
 
 
 def coco2binary(color_map):
@@ -30,7 +35,8 @@ def coco2binary(color_map):
     masks_dir = "../data/masks"
 
     # Directory with all images and annotations .json
-    annotations_file = os.path.join("..", "data", "annotations_coco_json", "_annotations.coco.json")
+    annotations_file = os.path.join(
+        "..", "data", "annotations_coco_json", "_annotations.coco.json")
 
     # Read annotations
     coco = COCO(annotations_file)
@@ -42,25 +48,26 @@ def coco2binary(color_map):
     # Iterate over annotations
     for img_id, img in coco.imgs.items():
         # Get image name
-        img_name = img["file_name"][:-len(img["file_name"].split('.'))]
+        # img_name = img["file_name"][:-len(img["file_name"].split('.'))]
+        img_name = img["file_name"].split('.')[0]
+        # img_name = img["file_name"]
 
         # Print progress
         print(f"Processing image {img_name}")
 
         # Create and initialize the  empty array to store the mask
-        mask = np.ndarray(shape=(img["height"], img["width"], 3), dtype=np.uint8)
-        mask[:,:] = 0
+        mask = np.ndarray(
+            shape=(img["height"], img["width"], 3), dtype=np.uint8)
+        mask[:, :] = 0
 
         # Create mask and add to array
         for ann in coco.imgToAnns[img_id]:
             img_id = ann["image_id"]
             cat_id = ann["category_id"]
-            
+
             for i in range(3):
                 mask[:, :, i] += coco.annToMask(ann)
                 mask[:, :, i][mask[:, :, i] == cat_id] = color_map[cat_id][i]
-            
-        
 
         # Save mask in .png format
         mask = Image.fromarray(mask, mode="RGB")
@@ -95,7 +102,7 @@ def update_classes_from_json(file_path):
     """
     with open(file_path, 'r') as file:
         data = json.load(file)
-        
+
         all_classes = list()
         supercategory_color_map = dict()
 
@@ -110,32 +117,37 @@ def update_classes_from_json(file_path):
             else:
                 # Generate color and rescale it to [0, 255]
                 if category_id not in supercategory_color_map:
-                    color = tuple(int(x * 255) for x in generate_unique_colors(255)[0])
+                    color = tuple(int(x * 255)
+                                  for x in generate_unique_colors(255)[0])
 
             # Assign color to class
             supercategory_color_map[category_id] = color
-            
+
             all_classes.append(category_name)
 
     return all_classes, supercategory_color_map
+
 
 if __name__ == "__main__":
     # Caminho para o arquivo JSON
     move_anns()
     json_file_path = '../data/annotations_coco_json/_annotations.coco.json'
 
-    ALL_CLASSES, supercategory_color_map = update_classes_from_json(json_file_path)
+    ALL_CLASSES, supercategory_color_map = update_classes_from_json(
+        json_file_path)
     print("Classes:", ALL_CLASSES)
     print("Color map:", supercategory_color_map)
 
     # Crie uma lista de cores mapeadas para as classes
-    LABEL_COLORS_LIST = [supercategory_color_map[ALL_CLASSES.index(category)] for category in ALL_CLASSES]
-    VIS_LABEL_MAP = [supercategory_color_map[ALL_CLASSES.index(category)] for category in ALL_CLASSES]
+    LABEL_COLORS_LIST = [supercategory_color_map[ALL_CLASSES.index(
+        category)] for category in ALL_CLASSES]
+    VIS_LABEL_MAP = [supercategory_color_map[ALL_CLASSES.index(
+        category)] for category in ALL_CLASSES]
 
     print("Gerando máscaras...")
     coco2binary(supercategory_color_map)
     print("Feito!")
-    
+
     new_data = {"ALL_CLASSES": ALL_CLASSES,
                 "supercategory_color_map": supercategory_color_map,
                 "LABEL_COLORS_LIST": LABEL_COLORS_LIST,
@@ -143,4 +155,3 @@ if __name__ == "__main__":
 
     with open(os.path.join("..", "data", "annotations_coco_json", "class_data.json"), 'w') as f:
         json.dump(new_data, f)
-        
