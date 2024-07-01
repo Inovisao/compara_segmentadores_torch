@@ -17,3 +17,4 @@ Evaluation_from_checkpoints/
 data_test/
 checkpoints_from_other_computer/
 evaluation_results.csv
+predictions/

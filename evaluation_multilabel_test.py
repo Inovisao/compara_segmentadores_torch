@@ -64,35 +64,6 @@ class COCOMultiLabelSegmentationDataset(Dataset):
         return image, mask
 
 
-# Define any transformations (e.g., resizing, normalization) to apply to the images and masks
-image_transform = transforms.Compose([
-    transforms.Resize((512, 512)),
-    transforms.ToTensor()
-])
-
-mask_transform = transforms.Compose([
-    transforms.Resize((512, 512)),
-    transforms.ToTensor()
-])
-
-# Create an instance of the dataset
-root_dir = '/home/corbusier/development/compara_segmentadores_torch_/data_512_UCDB_UPS/all/imagens'
-annotation_file = '/home/corbusier/development/compara_segmentadores_torch_/data_512_UCDB_UPS/annotations_coco_json/_annotations.coco.json'
-# include_patterns = ['UPS', 'UCDB']
-include_patterns = ['UPS']
-
-dataset = COCOMultiLabelSegmentationDataset(
-    root_dir=root_dir, annotation_file=annotation_file, include_patterns=include_patterns, transform=image_transform)
-
-# Create a DataLoader for your dataset
-val_loader = DataLoader(dataset, batch_size=8, shuffle=False)
-
-# Example usage: iterate over the DataLoader
-for images, masks in val_loader:
-    # Perform your evaluation here
-    pass
-
-
 def load_model_and_optimizer(model_name, optimizer_name, checkpoint_path):
 
     def deeplabv3_resnet101(in_channels, out_classes, pretrained):
@@ -108,28 +79,6 @@ def load_model_and_optimizer(model_name, optimizer_name, checkpoint_path):
             7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         model.classifier[4] = nn.Conv2d(320, out_classes, kernel_size=1)
         return model
-    # def deeplabv3_resnet101(in_channels, out_classes, pretrained=False):
-    #     # Remove pretrained=True to align with newer PyTorch
-    #     model = segmentation.deeplabv3_resnet101(
-    #         pretrained=pretrained, weights=None)
-    #     model.backbone.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(
-    #         7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-    #     model.classifier[4] = nn.Conv2d(256, out_classes, kernel_size=1)
-    #     if hasattr(model, 'aux_classifier'):
-    #         model.aux_classifier[4] = nn.Conv2d(
-    #             256, out_classes, kernel_size=1)
-    #     return model
-
-    # def deeplabv3_resnet50(in_channels, out_classes, pretrained=False):
-    #     model = segmentation.deeplabv3_resnet50(
-    #         pretrained=pretrained, weights=None)  # Same change as above
-    #     model.backbone.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(
-    #         7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-    #     model.classifier[4] = nn.Conv2d(320, out_classes, kernel_size=1)
-    #     if hasattr(model, 'aux_classifier'):
-    #         model.aux_classifier[4] = nn.Conv2d(
-    #             256, out_classes, kernel_size=1)
-    #     return model
 
     def fcn_resnet50(in_channels, out_classes, pretrained):
         model = segmentation.fcn_resnet50(pretrained=pretrained)
@@ -264,6 +213,45 @@ def calculate_metrics(preds, labels, num_classes):
 # Function to visualize predictions
 
 
+def save_predictions(data_loader, model, device, save_dir, num_images=5):
+    model.eval()
+    images, labels = next(iter(data_loader))
+    images, labels = images.to(device), labels.to(device)
+
+    with torch.no_grad():
+        preds = model(images)
+        preds = torch.argmax(preds, dim=1)
+
+    # Ensure the save directory exists
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    for i in range(min(num_images, images.size(0))):
+        # Save input image
+        plt.figure()
+        plt.imshow(images[i].cpu().permute(1, 2, 0))
+        plt.title('Input Image')
+        plt.axis('off')
+        plt.savefig(os.path.join(save_dir, f'input_{i}.png'))
+        plt.close()
+
+        # Save ground truth image
+        plt.figure()
+        plt.imshow(labels[i].cpu(), cmap='gray')
+        plt.title('Ground Truth')
+        plt.axis('off')
+        plt.savefig(os.path.join(save_dir, f'ground_truth_{i}.png'))
+        plt.close()
+
+        # Save predicted image
+        plt.figure()
+        plt.imshow(preds[i].cpu(), cmap='gray')
+        plt.title('Predicted Label')
+        plt.axis('off')
+        plt.savefig(os.path.join(save_dir, f'predicted_{i}.png'))
+        plt.close()
+
+
 def visualize_predictions(images, labels, preds, num_images=5):
     for i in range(min(num_images, len(images))):
         plt.figure(figsize=(15, 5))
@@ -279,26 +267,55 @@ def visualize_predictions(images, labels, preds, num_images=5):
         plt.show()
 
 
+# Define any transformations (e.g., resizing, normalization) to apply to the images and masks
+image_transform = transforms.Compose([
+    transforms.Resize((512, 512)),
+    transforms.ToTensor()
+])
+
+mask_transform = transforms.Compose([
+    transforms.Resize((512, 512)),
+    transforms.ToTensor()
+])
+
+# Create an instance of the dataset
+root_dir = '/home/corbusier/development/compara_segmentadores_torch_/data_512_UCDB_UPS/all/imagens'
+annotation_file = '/home/corbusier/development/compara_segmentadores_torch_/data_512_UCDB_UPS/annotations_coco_json/_annotations.coco.json'
+save_directory = '/home/corbusier/development/compara_segmentadores_torch_/Evaluation_from_checkpoints/predictions'
+# include_patterns = ['UPS', 'UCDB']
+include_patterns = ['UPS']
+
+dataset = COCOMultiLabelSegmentationDataset(
+    root_dir=root_dir, annotation_file=annotation_file, include_patterns=include_patterns, transform=image_transform)
+
+# Create a DataLoader for your dataset
+val_loader = DataLoader(dataset, batch_size=2, shuffle=False)
+
+# Example usage: iterate over the DataLoader
+for images, masks in val_loader:
+    # Perform your evaluation here
+    pass
+
 # Define the base path where the checkpoints are stored
 base_path = '/home/corbusier/development/compara_segmentadores_torch_/Evaluation_from_checkpoints/checkpoints/model_checkpoints/'
 
 # List of checkpoint files
 checkpoint_files = [
-    # '1_deeplabv3_resnet101_adagrad.pth',
-    # '1_deeplabv3_resnet101_adam.pth',
-    # '1_deeplabv3_resnet101_sgd.pth',
+    '1_deeplabv3_resnet101_adagrad.pth',
+    '1_deeplabv3_resnet101_adam.pth',
+    '1_deeplabv3_resnet101_sgd.pth',
     '1_fcn_resnet50_adagrad.pth',
-    # '1_fcn_resnet50_adam.pth',
-    # '1_fcn_resnet50_sgd.pth',
+    '1_fcn_resnet50_adam.pth',
+    '1_fcn_resnet50_sgd.pth',
     # '1_segformer_adagrad.pth',
     # '1_segformer_adam.pth',
     # '1_segformer_sgd.pth',
-    # '2_deeplabv3_resnet101_adagrad.pth',
-    # '2_deeplabv3_resnet101_adam.pth',
-    # '2_deeplabv3_resnet101_sgd.pth',
-    # '2_fcn_resnet50_adagrad.pth',
-    # '2_fcn_resnet50_adam.pth',
-    # '2_fcn_resnet50_sgd.pth',
+    '2_deeplabv3_resnet101_adagrad.pth',
+    '2_deeplabv3_resnet101_adam.pth',
+    '2_deeplabv3_resnet101_sgd.pth',
+    '2_fcn_resnet50_adagrad.pth',
+    '2_fcn_resnet50_adam.pth',
+    '2_fcn_resnet50_sgd.pth',
     # '2_segformer_adagrad.pth',
     # '2_segformer_adam.pth',
     # '2_segformer_sgd.pth'
@@ -332,6 +349,7 @@ csv_file = 'evaluation_results.csv'
 csv_columns = ['Model', 'Optimizer', 'Precision', 'Recall', 'F1-score',
                'Class Precision', 'Class Recall', 'Class F1-score', 'mIoU']
 
+
 with open(csv_file, mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(csv_columns)
@@ -343,6 +361,7 @@ with open(csv_file, mode='w', newline='') as file:
 
         model, optimizer = load_model_and_optimizer(
             model_name, optimizer_name, checkpoint_path)
+        save_predictions(val_loader, model, device, save_directory)
         preds, labels = evaluate(model, val_loader, device, num_classes)
         precision, recall, f1, class_precision, class_recall, class_f1, miou = calculate_metrics(
             preds, labels, num_classes)
