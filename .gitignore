@@ -6,8 +6,8 @@ src/IELT/pretrained/
 results/
 resultsNfolds/
 results_dl/
-data
-model_checkpoints
+data/
+model_checkpoints/
 outputs/
 .vscode/
-checkpoint
+checkpoint/
